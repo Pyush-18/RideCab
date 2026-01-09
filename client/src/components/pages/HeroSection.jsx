@@ -1,6 +1,6 @@
-import { ArrowRight, Calendar, MapPin, ShieldCheck, Star } from "lucide-react";
+import { CarFrontIcon, ShieldCheck, Star } from "lucide-react";
 import {useScroll, useTransform, useSpring, motion} from "motion/react"
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { useNavigate } from "react-router";
 
 
@@ -38,9 +38,6 @@ const FloatingParticles = () => {
 };
 
 export default function HeroSection() {
-  const [pickupDate, setPickupDate] = useState('Wed, 24 July - 12:00');
-  const [returnDate, setReturnDate] = useState('Sat, 27 July - 10:00');
-  const [location, setLocation] = useState('New York, Central Park');
   const navigate = useNavigate()
 
   const heroRef = useRef(null);
@@ -103,7 +100,7 @@ export default function HeroSection() {
           
           <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-3 md:gap-4">
             <button onClick={() => navigate('/pricing')} className="px-6 md:px-8 py-3 md:py-4 bg-slate-900 text-white rounded-full font-semibold hover:bg-slate-800 transition-all hover:scale-105 flex items-center justify-center gap-2 shadow-xl shadow-slate-900/20">
-              View Fleet <ArrowRight size={18} />
+              Book Now <CarFrontIcon size={18} />
             </button>
           </motion.div>
         </motion.div>
@@ -139,43 +136,6 @@ export default function HeroSection() {
         </motion.div>
       </div>
 
-      <motion.div 
-        className="max-w-5xl mx-auto mt-12 md:mt-16 lg:mt-20 relative z-30"
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.8 }}
-      >
-        <div className="bg-white rounded-xl md:rounded-2xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] p-3 md:p-4 border border-slate-100 flex flex-col md:flex-row gap-3 md:gap-4">
-          
-          <div className="flex-1 px-3 md:px-4 py-2 border-b md:border-b-0 md:border-r border-slate-100 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer group">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider group-hover:text-amber-600">Location</label>
-            <div className="flex items-center gap-2 mt-1">
-              <MapPin size={18} className="text-slate-400 group-hover:text-amber-600 md:w-5 md:h-5" />
-              <span className="font-medium text-slate-800 text-sm md:text-base">{location}</span>
-            </div>
-          </div>
-
-          <div className="flex-1 px-3 md:px-4 py-2 border-b md:border-b-0 md:border-r border-slate-100 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer group">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider group-hover:text-amber-600">Pick-up</label>
-            <div className="flex items-center gap-2 mt-1">
-              <Calendar size={18} className="text-slate-400 group-hover:text-amber-600 md:w-5 md:h-5" />
-              <span className="font-medium text-slate-800 text-sm md:text-base">{pickupDate}</span>
-            </div>
-          </div>
-
-          <div className="flex-1 px-3 md:px-4 py-2 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer group">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider group-hover:text-amber-600">Return</label>
-            <div className="flex items-center gap-2 mt-1">
-              <Calendar size={18} className="text-slate-400 group-hover:text-amber-600 md:w-5 md:h-5" />
-              <span className="font-medium text-slate-800 text-sm md:text-base">{returnDate}</span>
-            </div>
-          </div>
-
-          <button className="bg-slate-900 hover:bg-amber-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2">
-             Search
-          </button>
-        </div>
-      </motion.div>
     </section>
   );
 }

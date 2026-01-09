@@ -223,41 +223,42 @@ const AdminDashboard = () => {
     return Object.values(monthlyRevenue);
   })();
 
+  const COLORS = [
+    "#3b82f6",
+    "#22c55e",
+    "#f59e0b",
+    "#8b5cf6",
+    "#ef4444",
+    "#14b8a6",
+    "#e11d48",
+  ];
+
   const carTypeData = (() => {
     const carTypeCounts = {};
     let totalBookings = 0;
+
     bookings.forEach((booking) => {
       const carType = booking.carName || booking.carType || "Other";
       carTypeCounts[carType] = (carTypeCounts[carType] || 0) + 1;
       totalBookings++;
     });
 
-    const colorMap = {
-      Sedan: "#3b82f6",
-      "Comfort Sedan": "#3b82f6",
-      SUV: "#22c55e",
-      "Family SUV": "#22c55e",
-      "Premium SUV": "#8b5cf6",
-      Hatchback: "#f59e0b",
-      Sports: "#ef4444",
-      Other: "#64748b",
-    };
+    const colorMap = {};
+    let colorIndex = 0;
 
-    const result = Object.entries(carTypeCounts).map(([name, count]) => ({
-      name,
-      value: totalBookings > 0 ? Math.round((count / totalBookings) * 100) : 0,
-      color: colorMap[name] || "#64748b",
-    }));
+    return Object.entries(carTypeCounts).map(([name, count]) => {
+      if (!colorMap[name]) {
+        colorMap[name] = COLORS[colorIndex % COLORS.length];
+        colorIndex++;
+      }
 
-    if (result.length === 0) {
-      return [
-        { name: "Sedan", value: 45, color: "#3b82f6" },
-        { name: "SUV", value: 30, color: "#22c55e" },
-        { name: "Hatchback", value: 25, color: "#f59e0b" },
-      ];
-    }
-
-    return result;
+      return {
+        name,
+        value:
+          totalBookings > 0 ? Math.round((count / totalBookings) * 100) : 0,
+        color: colorMap[name],
+      };
+    });
   })();
 
   const dailyBookings = (() => {
@@ -296,7 +297,6 @@ const AdminDashboard = () => {
     return Object.values(weekData);
   })();
 
-
   const transactions = payments
     .filter((p) => p.status === "success")
     .map((p) => {
@@ -305,6 +305,7 @@ const AdminDashboard = () => {
         id: p.id,
         user: p.userName || "N/A",
         email: p.userEmail || "N/A",
+        mobileNumber: bookingDetails.mobileNumber || "N/A",
         route: bookingDetails.route || "N/A",
         carType: bookingDetails.carName || "N/A",
         carModel: bookingDetails.carModel || "N/A",
@@ -352,9 +353,13 @@ const AdminDashboard = () => {
         capacity: booking.capacity || "N/A",
         luggage: booking.luggage || "N/A",
         status: booking.status,
+        mobileNumber: booking.mobileNumber || "N/A",
         amount: bookingPayment ? bookingPayment.amount / 100 : 0,
         createdAt: booking.createdAt,
         completedAt: booking.completedAt,
+        selectedPickupDate: booking.selectedPickupDate,
+        selectedPickupTime: booking.selectedPickupTime,
+        selectedReturnDate: booking.selectedReturnDate || null,
       };
     });
 

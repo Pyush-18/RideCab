@@ -24,7 +24,6 @@ export const Features = () => {
     <section className="py-32 bg-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
         
-        {/* Header - Minimal & Centered */}
         <div className="text-center mb-20 max-w-2xl mx-auto">
           <motion.h2 
             initial={{ opacity: 0, y: 10 }}
@@ -56,7 +55,6 @@ export const Features = () => {
               transition={{ delay: i * 0.1, duration: 0.4, ease: "easeOut" }}
               className="group relative flex flex-col items-start text-left p-10 rounded-[2.5rem] bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(251,191,36,0.15)] hover:border-amber-100 transition-all duration-500"
             >
-              {/* Icon Container - Floating & Elegant */}
               <div className="mb-8 relative">
                 <div className="absolute inset-0 bg-amber-100 blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-500 rounded-full" />
                 <div className="relative w-14 h-14 flex items-center justify-center bg-slate-50 rounded-2xl group-hover:bg-amber-50 group-hover:text-amber-600 text-slate-900 transition-colors duration-300">
@@ -64,7 +62,6 @@ export const Features = () => {
                 </div>
               </div>
 
-              {/* Text Content */}
               <h3 className="text-2xl font-semibold text-slate-900 mb-4 tracking-tight">
                 {feature.title}
               </h3>
@@ -73,7 +70,6 @@ export const Features = () => {
                 {feature.desc}
               </p>
 
-              {/* Subtle Decorative Corner (Optional Aesthetic Touch) */}
               <div className="absolute top-10 right-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
                 <div className="w-2 h-2 rounded-full bg-amber-400/50" />
               </div>

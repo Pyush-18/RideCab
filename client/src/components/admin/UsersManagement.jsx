@@ -7,6 +7,7 @@ import {
   CreditCard,
   MapPin,
   MapPinOff,
+  TabletSmartphoneIcon,
 } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -39,6 +40,7 @@ const UsersManagement = ({ users, darkMode, cardClasses }) => {
     useUsersFilters(users);
 
   const handleViewProfile = (user) => {
+    console.log("selected user: ", user);
     setSelectedUser(user);
     setDialogOpen(true);
   };
@@ -144,7 +146,7 @@ const UsersManagement = ({ users, darkMode, cardClasses }) => {
                           darkMode ? "bg-slate-700" : "bg-slate-200"
                         } flex items-center justify-center font-semibold`}
                       >
-                        {user.displayName?.charAt(0) || "U"}
+                        {user.displayName?.charAt(0).toUpperCase() || "U"}
                       </div>
                       <div>
                         <p className="font-semibold">{user.displayName}</p>
@@ -320,6 +322,57 @@ const UsersManagement = ({ users, darkMode, cardClasses }) => {
                                   {booking.from} → {booking.to}
                                 </span>
                               </div>
+
+                              {booking.mobileNumber && (
+                                <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg">
+                                  <div className="flex items-center gap-2">
+                                  <TabletSmartphoneIcon size={16} className="text-yellow-500" />
+                                  <span className="text-sm font-medium text-slate-600">
+                                    {booking.mobileNumber}
+                                  </span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {booking.selectedPickupDate &&
+                                booking.selectedPickupTime && (
+                                  <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-lg">
+                                    <Calendar
+                                      size={14}
+                                      className="text-blue-600"
+                                    />
+                                    <span className="text-sm font-medium text-blue-900">
+                                      {new Date(
+                                        booking.selectedPickupDate
+                                      ).toLocaleDateString("en-IN", {
+                                        weekday: "short",
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric",
+                                      })}{" "}
+                                      at {booking.selectedPickupTime}
+                                    </span>
+                                  </div>
+                                )}
+                              {booking.selectedReturnDate && (
+                                <div className="flex items-center gap-2 bg-amber-50 px-3 py-1.5 rounded-lg">
+                                  <Calendar
+                                    size={14}
+                                    className="text-amber-600"
+                                  />
+                                  <span className="text-xs font-medium text-amber-900">
+                                    Return:{" "}
+                                    {new Date(
+                                      booking.selectedReturnDate
+                                    ).toLocaleDateString("en-IN", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })}
+                                  </span>
+                                </div>
+                              )}
+
                               <div className="flex gap-4 text-sm">
                                 <span
                                   className={

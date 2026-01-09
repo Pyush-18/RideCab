@@ -26,6 +26,7 @@ export const createBooking = createAsyncThunk(
         userId: auth.user.uid,
         userEmail: auth.user.email,
         userName: auth.user.displayName,
+        mobileNumber: bookingData.mobileNumber,
         status: "pending",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -184,94 +185,94 @@ const bookingSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-  builder
-    .addCase(createBooking.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-      state.createSuccess = false;
-    })
-    .addCase(createBooking.fulfilled, (state, action) => {
-      state.loading = false;
-      state.currentBooking = action.payload;
-      state.createSuccess = true;
-      state.error = null;
-    })
-    .addCase(createBooking.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-      state.createSuccess = false;
-    })
+    builder
+      .addCase(createBooking.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.createSuccess = false;
+      })
+      .addCase(createBooking.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentBooking = action.payload;
+        state.createSuccess = true;
+        state.error = null;
+      })
+      .addCase(createBooking.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.createSuccess = false;
+      })
 
-    // Fetch user bookings
-    .addCase(fetchUserBookings.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    })
-    .addCase(fetchUserBookings.fulfilled, (state, action) => {
-      state.loading = false;
-      state.bookings = action.payload;
-      state.error = null;
-    })
-    .addCase(fetchUserBookings.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    })
+      // Fetch user bookings
+      .addCase(fetchUserBookings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserBookings.fulfilled, (state, action) => {
+        state.loading = false;
+        state.bookings = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchUserBookings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
 
-    // Fetch by ID
-    .addCase(fetchBookingById.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    })
-    .addCase(fetchBookingById.fulfilled, (state, action) => {
-      state.loading = false;
-      state.currentBooking = action.payload;
-      state.error = null;
-    })
-    .addCase(fetchBookingById.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    })
+      // Fetch by ID
+      .addCase(fetchBookingById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchBookingById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentBooking = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchBookingById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
 
-    // Fetch all bookings
-    .addCase(fetchAllBookings.fulfilled, (state, action) => {
-      state.loading = false;
-      state.bookings = action.payload;
-    })
+      // Fetch all bookings
+      .addCase(fetchAllBookings.fulfilled, (state, action) => {
+        state.loading = false;
+        state.bookings = action.payload;
+      })
 
-    .addCase(updateBookingStatus.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    })
-    .addCase(updateBookingStatus.fulfilled, (state, action) => {
-      state.loading = false;
-      const { bookingId, status } = action.payload;
-      if (state.currentBooking?.id === bookingId) {
-        state.currentBooking.status = status;
-      }
-      state.error = null;
-    })
-    .addCase(updateBookingStatus.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    })
+      .addCase(updateBookingStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateBookingStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        const { bookingId, status } = action.payload;
+        if (state.currentBooking?.id === bookingId) {
+          state.currentBooking.status = status;
+        }
+        state.error = null;
+      })
+      .addCase(updateBookingStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
 
-    .addCase(cancelBooking.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    })
-    .addCase(cancelBooking.fulfilled, (state, action) => {
-      state.loading = false;
-      const bookingId = action.payload;
-      if (state.currentBooking?.id === bookingId) {
-        state.currentBooking.status = "cancelled";
-      }
-      state.error = null;
-    })
-    .addCase(cancelBooking.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    });
-}
+      .addCase(cancelBooking.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(cancelBooking.fulfilled, (state, action) => {
+        state.loading = false;
+        const bookingId = action.payload;
+        if (state.currentBooking?.id === bookingId) {
+          state.currentBooking.status = "cancelled";
+        }
+        state.error = null;
+      })
+      .addCase(cancelBooking.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  },
 });
 
 export const {
@@ -279,6 +280,6 @@ export const {
   clearCreateSuccess,
   setCurrentBooking,
   clearCurrentBooking,
-  setBookings
+  setBookings,
 } = bookingSlice.actions;
 export default bookingSlice.reducer;

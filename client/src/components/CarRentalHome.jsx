@@ -1,15 +1,14 @@
 
-import {CarGrid, HeroSection, Testimonials, Features} from "./index"
-import RideBookingCard from "./pages/RideBookingCard";
+import {CarGrid, HeroSection, Testimonials, Features, RideBookingCard} from "./index"
 
 const CarRentalHome = () => {
   return (
     <>
       <HeroSection />
       <RideBookingCard />
-      <CarGrid />
       <Features />
       <Testimonials />
+      <CarGrid />
     </>
   );
 };

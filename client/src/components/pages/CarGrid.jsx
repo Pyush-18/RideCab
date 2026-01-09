@@ -87,9 +87,7 @@ export const CarGrid = () => {
           capacity: price.capacity?.toString() || "4",
           luggage: price.luggage || "2 Bags",
           image: getCarImage(price.carType, price.routeFrom, price.routeTo),
-
           route: formatRoute(price),
-
           tripType: price.tripType,
           minKm: price.minKm,
         };
@@ -114,33 +112,33 @@ export const CarGrid = () => {
   }
 
   return (
-    <section className="py-24 px-6 relative z-10 bg-slate-50/50">
+    <section className="py-12 sm:py-16 md:py-20 lg:py-24 px-3 sm:px-4 md:px-6 relative z-10 bg-slate-50/50">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="flex flex-col md:flex-row justify-between items-end mb-14 gap-4"
+          className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 sm:mb-10 md:mb-14 gap-3 sm:gap-4"
         >
           <div>
-            <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-2 sm:mb-3 md:mb-4 tracking-tight">
               Premium Fleet
             </h2>
-            <p className="text-slate-500 text-lg max-w-xl">
+            <p className="text-slate-500 text-sm sm:text-base md:text-lg max-w-xl">
               Experience the perfect blend of comfort and style. Choose from our
               meticulously maintained collection.
             </p>
           </div>
           <button
             onClick={handleViewAll}
-            className="hidden md:flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-full text-slate-900 font-medium hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+            className="hidden md:flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-white border border-slate-200 rounded-full text-slate-900 font-medium text-sm hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm whitespace-nowrap"
           >
             View All Cars <ArrowRight size={18} className="text-amber-600" />
           </button>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {cars.splice(0,5).map((car, index) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
+          {cars.slice(0, 5).map((car, index) => (
             <motion.div
               key={index}
               variants={{
@@ -151,22 +149,24 @@ export const CarGrid = () => {
               whileInView="visible"
               viewport={{ once: true, margin: "-50px" }}
               transition={{ delay: index * 0.1 }}
-              className="group relative bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-slate-200/60 transition-all duration-500 ease-out border border-slate-100"
+              className="group relative bg-white rounded-2xl sm:rounded-3xl lg:rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-slate-200/60 transition-all duration-500 ease-out border border-slate-100"
             >
-              <div className="relative h-64 overflow-hidden">
+              <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden">
                 <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent z-10 opacity-60 group-hover:opacity-40 transition-opacity" />
 
-                <div className="absolute top-4 left-4 z-20 flex gap-2">
-                  <span className="px-3 py-1 bg-white/95 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-wider text-slate-900 shadow-sm">
+                <div className="absolute top-3 sm:top-4 left-3 sm:left-4 z-20 flex gap-2">
+                  <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-white/95 backdrop-blur-md rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-900 shadow-sm">
                     {car.category}
                   </span>
                 </div>
 
-                <div className="absolute top-4 right-4 z-20">
-                  <div className="px-4 py-1.5 bg-slate-900/90 backdrop-blur-md rounded-full text-white font-medium text-sm shadow-lg border border-white/10">
+                <div className="absolute top-3 sm:top-4 right-3 sm:right-4 z-20">
+                  <div className="px-2.5 sm:px-4 py-1 sm:py-1.5 bg-slate-900/90 backdrop-blur-md rounded-full text-white font-medium text-xs sm:text-sm shadow-lg border border-white/10">
                     {car.price}
                     {car.tripType === "round-trip" && (
-                      <span className="text-slate-400 text-xs ml-1">/km</span>
+                      <span className="text-slate-400 text-[10px] sm:text-xs ml-1">
+                        /km
+                      </span>
                     )}
                   </div>
                 </div>
@@ -178,48 +178,57 @@ export const CarGrid = () => {
                 />
               </div>
 
-              <div className="p-6 relative">
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-slate-900 mb-1 group-hover:text-amber-600 transition-colors">
+              <div className="p-4 sm:p-5 md:p-6 relative">
+                <div className="mb-4 sm:mb-5 md:mb-6">
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1 group-hover:text-amber-600 transition-colors">
                     {car.name}
                   </h3>
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-slate-500 font-medium">
+                    <p className="text-xs sm:text-sm text-slate-500 font-medium">
                       {car.model}
                     </p>
                     {car.tripType === "round-trip" && (
-                      <span className="text-[10px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                      <span className="text-[9px] sm:text-[10px] text-slate-400 bg-slate-50 px-1.5 sm:px-2 py-0.5 rounded border border-slate-100">
                         Min {car.minKm}km
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 mb-6">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
-                    <Users size={14} className="text-slate-400" />
-                    <span className="text-xs font-semibold text-slate-700">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-5 md:mb-6">
+                  <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                    <Users
+                      size={12}
+                      className="text-slate-400 sm:w-3.5 sm:h-3.5"
+                    />
+                    <span className="text-[10px] sm:text-xs font-semibold text-slate-700">
                       {car.capacity} Seats
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
-                    <Luggage size={14} className="text-slate-400" />
-                    <span className="text-xs font-semibold text-slate-700">
+                  <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                    <Luggage
+                      size={12}
+                      className="text-slate-400 sm:w-3.5 sm:h-3.5"
+                    />
+                    <span className="text-[10px] sm:text-xs font-semibold text-slate-700">
                       {car.luggage}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
-                    <Gauge size={14} className="text-slate-400" />
-                    <span className="text-xs font-semibold text-slate-700">
+                  <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                    <Gauge
+                      size={12}
+                      className="text-slate-400 sm:w-3.5 sm:h-3.5"
+                    />
+                    <span className="text-[10px] sm:text-xs font-semibold text-slate-700">
                       AC
                     </span>
                   </div>
                 </div>
 
                 {car.route && (
-                  <div className="mb-6 p-3 bg-amber-50/50 rounded-xl border border-amber-100/50 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    <p className="text-xs text-slate-700 font-medium truncate">
+                  <div className="mb-4 sm:mb-5 md:mb-6 p-2.5 sm:p-3 bg-amber-50/50 rounded-lg sm:rounded-xl border border-amber-100/50 flex items-center gap-1.5 sm:gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                    <p className="text-[10px] sm:text-xs text-slate-700 font-medium truncate">
                       {car.route}
                       {car.tripType === "round-trip" && " (Round Trip)"}
                       {car.tripType === "multi-city" && " (Multi City)"}
@@ -229,12 +238,12 @@ export const CarGrid = () => {
 
                 <button
                   onClick={() => handleBookNow(car)}
-                  className="w-full py-3.5 rounded-xl bg-slate-900 text-white font-semibold text-sm hover:bg-amber-600 active:scale-95 transition-all duration-300 shadow-lg shadow-slate-900/20 hover:shadow-amber-600/30 flex items-center justify-center gap-2 group/btn"
+                  className="w-full py-2.5 sm:py-3 md:py-3.5 rounded-lg sm:rounded-xl bg-slate-900 text-white font-semibold text-xs sm:text-sm hover:bg-amber-600 active:scale-95 transition-all duration-300 shadow-lg shadow-slate-900/20 hover:shadow-amber-600/30 flex items-center justify-center gap-1.5 sm:gap-2 group/btn"
                 >
                   Book Now
                   <ArrowRight
-                    size={16}
-                    className="group-hover/btn:translate-x-1 transition-transform"
+                    size={14}
+                    className="sm:w-4 sm:h-4 group-hover/btn:translate-x-1 transition-transform"
                   />
                 </button>
               </div>
@@ -246,13 +255,13 @@ export const CarGrid = () => {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="mt-12 text-center md:hidden"
+          className="mt-8 sm:mt-10 md:mt-12 text-center md:hidden"
         >
           <button
             onClick={handleViewAll}
-            className="inline-flex items-center gap-2 text-slate-900 font-semibold border-b-2 border-amber-500 pb-1 hover:text-amber-600 transition-colors"
+            className="inline-flex items-center gap-2 text-slate-900 font-semibold text-sm border-b-2 border-amber-500 pb-1 hover:text-amber-600 transition-colors"
           >
-            Explore All Cars <ArrowRight size={18} />
+            Explore All Cars <ArrowRight size={16} />
           </button>
         </motion.div>
       </div>

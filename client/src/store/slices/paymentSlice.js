@@ -21,44 +21,104 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export const initiatePayment = createAsyncThunk(
   "payment/initiate",
-  async ({ bookingData, amount, tripType }, { rejectWithValue, getState }) => {
+  async ({ bookingData, amount, tripType }, { getState, rejectWithValue }) => {
     try {
-      const { auth } = getState();
-
-      if (!auth.user) {
-        throw new Error("User must be authenticated to make payment");
+      const state = getState();
+      const user = state.auth.user;
+      if (!user) {
+        throw new Error("User not authenticated");
       }
 
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        throw new Error(
-          "Razorpay SDK failed to load. Please check your internet connection."
-        );
+      // Parse amount - remove ₹ symbol and convert to number
+      const numericAmount =
+        typeof amount === "string"
+          ? parseFloat(amount.replace(/[₹,]/g, ""))
+          : amount;
+
+      if (isNaN(numericAmount) || numericAmount <= 0) {
+        throw new Error("Invalid amount");
       }
 
-      const paymentData = {
-        userId: auth.user.uid,
-        userEmail: auth.user.email,
-        userName: auth.user.displayName,
-        amount: formatAmountForRazorpay(amount),
-        currency: razorpayConfig.currency,
-        bookingDetails: bookingData,
-        tripType,
+      // Convert to paisa (Razorpay expects amount in smallest currency unit)
+      const amountInPaisa = Math.round(numericAmount * 100);
+
+      // Create booking document first
+      const bookingDoc = {
+        userId: user.uid,
+        userName: user.displayName || user.email,
+        userEmail: user.email,
+        carName: bookingData.carName,
+        carModel: bookingData.carModel,
+        capacity: bookingData.capacity,
+        luggage: bookingData.luggage,
+        mobileNumber: bookingData.mobileNumber,
+        from: bookingData.from,
+        to: bookingData.to,
+        route: bookingData.route,
+        tripType: bookingData.tripType,
+        selectedPickupDate: bookingData.selectedPickupDate,
+        selectedPickupTime: bookingData.selectedPickupTime,
+        selectedReturnDate: bookingData.selectedReturnDate || null,
+        pricePerKm: bookingData.pricePerKm || null,
+        minKm: bookingData.minKm || null,
+        pricingId: bookingData.pricingId || null,
+        amount: numericAmount,
         status: "pending",
+        paymentStatus: "pending",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
-      const paymentDocRef = await addDoc(
-        collection(db, "payments"),
-        paymentData
-      );
+      const bookingRef = await addDoc(collection(db, "bookings"), bookingDoc);
+      const bookingId = bookingRef.id;
+      
+      // Create payment document
+      const paymentDoc = {
+        userId: user.uid,
+        userName: user.displayName || user.email,
+        userEmail: user.email,
+        bookingId: bookingId,
+        amount: amountInPaisa,
+        currency: "INR",
+        status: "created",
+        tripType: tripType,
+        bookingDetails: {
+          carName: bookingData.carName,
+          carModel: bookingData.carModel,
+          from: bookingData.from,
+          to: bookingData.to,
+          route: bookingData.route,
+          capacity: bookingData.capacity,
+          luggage: bookingData.luggage,
+          tripType: bookingData.tripType,
+          mobileNumber: bookingData.mobileNumber,
+          selectedPickupDate: bookingData.selectedPickupDate,
+          selectedPickupTime: bookingData.selectedPickupTime,
+          selectedReturnDate: bookingData.selectedReturnDate || null,
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const paymentRef = await addDoc(collection(db, "payments"), paymentDoc);
+      const paymentId = paymentRef.id;
+
+      // FOR TESTING: Generate mock payment ID
+      const mockRazorpayPaymentId = `pay_test_${Date.now()}`;
 
       return {
-        paymentId: paymentDocRef.id,
-        ...paymentData,
+        paymentId,
+        bookingId,
+        amount: amountInPaisa,
+        currency: "INR",
+        bookingDetails: bookingData,
+        // Mock Razorpay response for testing
+        razorpayOrderId: `order_test_${Date.now()}`,
+        razorpayPaymentId: mockRazorpayPaymentId,
+        isMockPayment: true, // Flag to identify test payments
       };
     } catch (error) {
+      console.error("Payment initiation error:", error);
       return rejectWithValue(error.message);
     }
   }
@@ -66,120 +126,127 @@ export const initiatePayment = createAsyncThunk(
 
 export const processRazorpayPayment = createAsyncThunk(
   "payment/processRazorpay",
-  async ({ paymentData, onSuccess }, { rejectWithValue, getState }) => {
+  async ({ paymentData, onSuccess }, { rejectWithValue }) => {
     try {
-      const { auth } = getState();
+      const { paymentId, bookingId, amount, isMockPayment } = paymentData;
 
-      return new Promise((resolve, reject) => {
-        const options = {
-          key: razorpayConfig.key,
-          amount: paymentData.amount,
-          currency: paymentData.currency,
-          name: razorpayConfig.name,
-          description: razorpayConfig.description,
-          image: razorpayConfig.image,
-          handler: async function (response) {
-            try {
-              const successData = {
-                razorpayPaymentId: response.razorpay_payment_id,
-                paymentId: paymentData.paymentId,
-                status: "success",
-              };
+      // FOR TESTING: If it's a mock payment, simulate success immediately
+      if (isMockPayment) {
+        // Simulate a small delay for realistic feel
+        await new Promise((resolve) => setTimeout(resolve, 1500));
 
-              await updateDoc(doc(db, "payments", paymentData.paymentId), {
-                status: "success",
-                razorpayPaymentId: response.razorpay_payment_id,
-                completedAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              });
-
-              const bookingData = {
-                ...paymentData.bookingDetails,
-                userId: auth.user.uid,
-                userEmail: auth.user.email,
-                userName: auth.user.displayName,
-                paymentId: paymentData.paymentId,
-                razorpayPaymentId: response.razorpay_payment_id,
-                amount: paymentData.amount / 100,
-                status: "confirmed",
-                paymentStatus: "paid",
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              };
-
-              const bookingDocRef = await addDoc(
-                collection(db, "bookings"),
-                bookingData
-              );
-
-              await updateDoc(doc(db, "payments", paymentData.paymentId), {
-                bookingId: bookingDocRef.id,
-                updatedAt: new Date().toISOString(),
-              });
-
-              try {
-                const currentUser = firebaseAuth.currentUser;
-                if (currentUser) {
-                  const token = await currentUser.getIdToken();
-                  console.log(token);
-                  await axios.post(
-                    `${API_URL}/notifications/booking-created`,
-                    {
-                      bookingId: bookingDocRef.id,
-                      bookingData: {
-                        id: bookingDocRef.id,
-                        ...bookingData,
-                      },
-                    },
-                    {
-                      headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                      },
-                    }
-                  );
-                }
-              } catch (notificationError) {
-                console.error(
-                  "Failed to send notification:",
-                  notificationError
-                );
-              }
-
-              if (onSuccess) onSuccess();
-              resolve({ ...successData, bookingId: bookingDocRef.id });
-            } catch (error) {
-              reject(error);
-            }
-          },
-          prefill: {
-            name: auth.user.displayName || "",
-            email: auth.user.email || "",
-          },
-          theme: razorpayConfig.theme,
-          modal: {
-            ondismiss: function () {
-              reject(new Error("Payment cancelled by user"));
-            },
-          },
-        };
-
-        const razorpay = new window.Razorpay(options);
-
-        razorpay.on("payment.failed", async function (response) {
-          await updateDoc(doc(db, "payments", paymentData.paymentId), {
-            status: "failed",
-            failureReason: response.error.description,
-            razorpayPaymentId: response.error.metadata?.payment_id,
-            updatedAt: new Date().toISOString(),
-          });
-
-          reject(new Error(response.error.description));
+        // Update payment document
+        const paymentRef = doc(db, "payments", paymentId);
+        await updateDoc(paymentRef, {
+          status: "success",
+          razorpayPaymentId: paymentData.razorpayPaymentId,
+          razorpayOrderId: paymentData.razorpayOrderId,
+          completedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         });
 
-        razorpay.open();
+        // Update booking document
+        const bookingRef = doc(db, "bookings", bookingId);
+        await updateDoc(bookingRef, {
+          status: "confirmed",
+          paymentStatus: "completed",
+          paymentId: paymentId,
+          razorpayPaymentId: paymentData.razorpayPaymentId,
+          completedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+
+        if (onSuccess) {
+          onSuccess();
+        }
+
+        return {
+          success: true,
+          paymentId,
+          bookingId,
+          message: "Payment successful (Test Mode)",
+        };
+      }
+
+      // PRODUCTION CODE: Will be used when you add real Razorpay integration
+      // Load Razorpay script
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      document.body.appendChild(script);
+
+      await new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = () => reject(new Error("Failed to load Razorpay SDK"));
       });
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: amount,
+        currency: "INR",
+        name: "Your Company Name",
+        description: "Cab Booking Payment",
+        order_id: paymentData.razorpayOrderId,
+        handler: async function (response) {
+          try {
+            const paymentRef = doc(db, "payments", paymentId);
+            await updateDoc(paymentRef, {
+              status: "success",
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpaySignature: response.razorpay_signature,
+              completedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            });
+
+            const bookingRef = doc(db, "bookings", bookingId);
+            await updateDoc(bookingRef, {
+              status: "confirmed",
+              paymentStatus: "completed",
+              paymentId: paymentId,
+              razorpayPaymentId: response.razorpay_payment_id,
+              completedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            });
+
+            if (onSuccess) {
+              onSuccess();
+            }
+          } catch (error) {
+            console.error("Error updating payment:", error);
+            throw error;
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            throw new Error("Payment cancelled by user");
+          },
+        },
+        theme: {
+          color: "#f59e0b",
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+
+      return {
+        success: true,
+        paymentId,
+        bookingId,
+      };
     } catch (error) {
+      console.error("Razorpay payment error:", error);
+
+      if (paymentData.paymentId) {
+        const paymentRef = doc(db, "payments", paymentData.paymentId);
+        await updateDoc(paymentRef, {
+          status: "failed",
+          error: error.message,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
       return rejectWithValue(error.message);
     }
   }

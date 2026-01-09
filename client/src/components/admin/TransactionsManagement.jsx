@@ -139,7 +139,7 @@ const TransactionsManagement = ({ transactions, darkMode, cardClasses }) => {
                           darkMode ? "bg-slate-700" : "bg-slate-200"
                         } flex items-center justify-center font-semibold`}
                       >
-                        {txn.user?.charAt(0) || "U"}
+                        {txn.user?.charAt(0).toUpperCase() || "U"}
                       </div>
                       <div>
                         <p className="font-semibold">{txn.user}</p>

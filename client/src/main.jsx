@@ -20,6 +20,8 @@ import UserRoute from "./components/pages/UserRoute";
 import UserLayout from "./components/pages/UserLayout";
 import AdminLayout from "./components/admin/AdminLayout";
 import NotificationBell from "./components/admin/NotificationBell";
+import { Toaster } from "sonner";
+import { FloatingContactWidget } from "./components";
 
 const AuthInitializer = ({ children }) => {
   const dispatch = useDispatch();
@@ -40,6 +42,8 @@ const AppRoutes = () => {
           element={
             <UserRoute>
               <UserLayout />
+              
+      <FloatingContactWidget />
             </UserRoute>
           }
         >
@@ -90,6 +94,7 @@ createRoot(document.getElementById("root")).render(
       <Provider store={store}>
         <AuthInitializer>
           <AppRoutes />
+          <Toaster />
         </AuthInitializer>
       </Provider>
     </BrowserRouter>

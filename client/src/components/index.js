@@ -12,7 +12,8 @@ import { Footer } from "./pages/Footer";
 import  HeroSection  from "./pages/HeroSection";
 import { Navbar } from "./pages/Navbar";
 import { Testimonials } from "./pages/Testimonials";
-
+import FloatingContactWidget from "./shared/FloatingContactWidget";
+import RideBookingCard from "./pages/RideBookingCard"
 
 
 export {
@@ -29,5 +30,7 @@ export {
   SettingsPage, 
   TransactionsManagement, 
   UsersManagement,
-  PricingManagement
+  PricingManagement,
+  FloatingContactWidget,
+  RideBookingCard
 };

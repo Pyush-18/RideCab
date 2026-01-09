@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import {
   Check,
   Users,
@@ -16,6 +16,9 @@ import {
   Loader,
   Filter,
   X,
+  Edit2,
+  Calendar,
+  Clock,
 } from "lucide-react";
 import {
   initiatePayment,
@@ -24,6 +27,319 @@ import {
 } from "../store/slices/paymentSlice";
 import { fetchActiveRoutes } from "../store/slices/routeSlice";
 import { fetchAllPricing } from "../store/slices/pricingSlice";
+import { toast } from "sonner";
+
+const InlineDatePicker = ({ value, onChange, label }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(
+    value ? new Date(value) : new Date()
+  );
+
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    return { daysInMonth, startingDayOfWeek, year, month };
+  };
+
+  const { daysInMonth, startingDayOfWeek, year, month } =
+    getDaysInMonth(currentMonth);
+
+  const handleDateSelect = (day) => {
+    const selectedDate = new Date(year, month, day);
+    onChange(selectedDate);
+    setIsOpen(false);
+  };
+
+  const isSelected = (day) => {
+    if (!value) return false;
+    const selected = new Date(value);
+    return (
+      day === selected.getDate() &&
+      month === selected.getMonth() &&
+      year === selected.getFullYear()
+    );
+  };
+
+  const isPastDate = (day) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkDate = new Date(year, month, day);
+    return checkDate < today;
+  };
+
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  return (
+    <div className="relative">
+      <label className="block text-xs font-medium text-slate-700 mb-2">
+        {label}
+      </label>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center gap-2 px-3 py-2 border-2 border-slate-200 rounded-lg bg-white hover:border-blue-300 transition-colors text-left text-sm"
+      >
+        <Calendar size={16} className="text-slate-400" />
+        <span className="text-slate-700">
+          {value
+            ? new Date(value).toLocaleDateString("en-IN", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })
+            : "Select date"}
+        </span>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute z-50 mt-2 bg-white rounded-xl shadow-2xl border border-slate-200 p-3 w-full"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <button
+                onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}
+                className="p-1 hover:bg-slate-100 rounded transition-colors"
+              >
+                <svg
+                  className="w-4 h-4 text-slate-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+              <h3 className="font-semibold text-slate-900 text-sm">
+                {monthNames[month]} {year}
+              </h3>
+              <button
+                onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}
+                className="p-1 hover:bg-slate-100 rounded transition-colors"
+              >
+                <svg
+                  className="w-4 h-4 text-slate-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 mb-1">
+              {dayNames.map((day) => (
+                <div
+                  key={day}
+                  className="text-xs font-medium text-slate-500 text-center p-1"
+                >
+                  {day[0]}
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: startingDayOfWeek }).map((_, idx) => (
+                <div key={`empty-${idx}`} />
+              ))}
+              {Array.from({ length: daysInMonth }).map((_, idx) => {
+                const day = idx + 1;
+                const past = isPastDate(day);
+                return (
+                  <button
+                    key={day}
+                    onClick={() => !past && handleDateSelect(day)}
+                    disabled={past}
+                    className={`p-1 text-xs rounded transition-all ${
+                      isSelected(day)
+                        ? "bg-blue-500 text-white font-bold"
+                        : past
+                        ? "text-slate-300 cursor-not-allowed"
+                        : "hover:bg-slate-100 text-slate-700"
+                    }`}
+                  >
+                    {day}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const InlineTimePicker = ({ value, onChange, label }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const timeSlots = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const hour = h.toString().padStart(2, "0");
+      const minute = m.toString().padStart(2, "0");
+      timeSlots.push(`${hour}:${minute}`);
+    }
+  }
+
+  return (
+    <div className="relative">
+      <label className="block text-xs font-medium text-slate-700 mb-2">
+        {label}
+      </label>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center gap-2 px-3 py-2 border-2 border-slate-200 rounded-lg bg-white hover:border-blue-300 transition-colors text-left text-sm"
+      >
+        <Clock size={16} className="text-slate-400" />
+        <span className="text-slate-700">{value || "Select time"}</span>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute z-50 mt-2 bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-h-48 overflow-y-auto"
+          >
+            {timeSlots.map((time) => (
+              <button
+                key={time}
+                onClick={() => {
+                  onChange(time);
+                  setIsOpen(false);
+                }}
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-blue-50 transition-colors ${
+                  value === time
+                    ? "bg-blue-100 text-blue-700 font-semibold"
+                    : "text-slate-700"
+                }`}
+              >
+                {time}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const DateTimeSection = ({
+  tripType,
+  pickupDate,
+  pickupTime,
+  returnDate,
+  onPickupDateChange,
+  onPickupTimeChange,
+  onReturnDateChange,
+}) => {
+  const [showDateTimePicker, setShowDateTimePicker] = useState(false);
+
+  return (
+    <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-3 sm:p-4">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs sm:text-sm text-slate-500">Scheduled Pickup</p>
+        <button
+          onClick={() => setShowDateTimePicker(!showDateTimePicker)}
+          className="p-1.5 hover:bg-slate-200 rounded-lg transition-colors"
+        >
+          <Edit2 size={14} className="text-blue-600" />
+        </button>
+      </div>
+
+      {!showDateTimePicker ? (
+        <div>
+          <p className="font-semibold text-sm sm:text-base text-slate-900">
+            {pickupDate
+              ? new Date(pickupDate).toLocaleDateString("en-IN", {
+                  weekday: "short",
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })
+              : "No date selected"}{" "}
+            at {pickupTime || "No time selected"}
+          </p>
+          {tripType === "roundTrip" && returnDate && (
+            <p className="text-xs text-slate-600 mt-1">
+              Return:{" "}
+              {new Date(returnDate).toLocaleDateString("en-IN", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3 mt-3">
+          <InlineDatePicker
+            value={pickupDate}
+            onChange={onPickupDateChange}
+            label={tripType === "roundTrip" ? "Pickup Date" : "Date"}
+          />
+
+          <InlineTimePicker
+            value={pickupTime}
+            onChange={onPickupTimeChange}
+            label={tripType === "roundTrip" ? "Pickup Time" : "Time"}
+          />
+
+          {tripType === "roundTrip" && (
+            <InlineDatePicker
+              value={returnDate}
+              onChange={onReturnDateChange}
+              label="Return Date"
+            />
+          )}
+
+          <button
+            onClick={() => setShowDateTimePicker(false)}
+            className="w-full py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold"
+          >
+            Done
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const PricingAndFAQ = () => {
   const dispatch = useDispatch();
@@ -46,6 +362,19 @@ const PricingAndFAQ = () => {
   const [displayedPricing, setDisplayedPricing] = useState([]);
   const [searchFilters, setSearchFilters] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+
+  const [modalPickupDate, setModalPickupDate] = useState(new Date());
+  const [modalPickupTime, setModalPickupTime] = useState("14:15");
+  const [modalReturnDate, setModalReturnDate] = useState(new Date());
+  const [modalMobileNumber, setModalMobileNumber] = useState("");
+
+  useEffect(() => {
+    setModalPickupDate(new Date());
+    setModalPickupTime("14:15");
+    setModalReturnDate(new Date());
+    setModalMobileNumber("");
+  }, [pricingMode]);
+
   useEffect(() => {
     if (location.state?.searchParams && location.state?.matchedPricing) {
       const { searchParams, matchedPricing } = location.state;
@@ -53,14 +382,21 @@ const PricingAndFAQ = () => {
       setDisplayedPricing(matchedPricing);
       setShowFilters(true);
 
+      if (searchParams.selectedDate) {
+        setModalPickupDate(new Date(searchParams.selectedDate));
+      }
+      if (searchParams.selectedTime) {
+        setModalPickupTime(searchParams.selectedTime);
+      }
+      if (searchParams.returnDate) {
+        setModalReturnDate(new Date(searchParams.returnDate));
+      }
+
       if (searchParams.bookingType === "outstation") {
         setPricingMode(searchParams.tripType || "one-way");
       } else if (searchParams.bookingType === "airport") {
         setPricingMode("one-way");
       }
-
-      console.log("Received search params:", searchParams);
-      console.log("Matched pricing:", matchedPricing);
     } else {
       setDisplayedPricing(pricing);
       setShowFilters(false);
@@ -144,6 +480,7 @@ const PricingAndFAQ = () => {
     if (searchFilters) {
       return displayedPricing.filter((p) => {
         if (searchFilters.bookingType === "airport") return true;
+        if (searchFilters.bookingType === "local") return true;
         if (searchFilters.bookingType === "outstation") {
           return (
             p.tripType === pricingMode || p.tripType === searchFilters.tripType
@@ -229,21 +566,24 @@ const PricingAndFAQ = () => {
 
   const handleBooking = async (car, route = null) => {
     if (!isAuthenticated) {
+      toast.info("Please login to book a cab");
       navigate("/");
       return;
     }
+
+    const tripTypeValue =
+      car.tripType === "one-way"
+        ? "oneWay"
+        : car.tripType === "multi-city"
+        ? "multiCity"
+        : "roundTrip";
 
     let bookingDetails = {
       carName: car.name,
       carModel: car.model,
       capacity: car.capacity,
       luggage: car.luggage,
-      tripType:
-        car.tripType === "one-way"
-          ? "oneWay"
-          : car.tripType === "multi-city"
-          ? "multiCity"
-          : "roundTrip",
+      tripType: tripTypeValue,
       bookingDate: new Date().toISOString(),
     };
 
@@ -304,10 +644,25 @@ const PricingAndFAQ = () => {
   const handlePaymentConfirm = async () => {
     if (!selectedBooking) return;
 
+    if (!modalMobileNumber || modalMobileNumber.length !== 10) {
+      toast.error("Please enter a valid 10-digit mobile number");
+      return;
+    }
+
+    const bookingWithDateTime = {
+      ...selectedBooking,
+      selectedPickupDate: modalPickupDate.toISOString(),
+      selectedPickupTime: modalPickupTime,
+      mobileNumber: modalMobileNumber,
+      ...(selectedBooking.tripType === "roundTrip" && {
+        selectedReturnDate: modalReturnDate.toISOString(),
+      }),
+    };
+
     try {
       const result = await dispatch(
         initiatePayment({
-          bookingData: selectedBooking,
+          bookingData: bookingWithDateTime,
           amount: selectedBooking.amount,
           tripType: selectedBooking.tripType,
         })
@@ -402,6 +757,40 @@ const PricingAndFAQ = () => {
                     </p>
                   </div>
                 )}
+
+                <DateTimeSection
+                  tripType={selectedBooking.tripType}
+                  pickupDate={modalPickupDate.toISOString()}
+                  pickupTime={modalPickupTime}
+                  returnDate={modalReturnDate.toISOString()}
+                  onPickupDateChange={setModalPickupDate}
+                  onPickupTimeChange={setModalPickupTime}
+                  onReturnDateChange={setModalReturnDate}
+                />
+
+                <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-3 sm:p-4">
+                  <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-2">
+                    Mobile Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={modalMobileNumber}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "");
+                      if (value.length <= 10) {
+                        setModalMobileNumber(value);
+                      }
+                    }}
+                    placeholder="Enter 10-digit mobile number"
+                    className="w-full px-3 py-2 border-2 border-slate-200 rounded-lg bg-white focus:border-blue-500 focus:outline-none text-sm"
+                    maxLength={10}
+                  />
+                  {modalMobileNumber && modalMobileNumber.length !== 10 && (
+                    <p className="text-xs text-red-500 mt-1">
+                      Mobile number must be 10 digits
+                    </p>
+                  )}
+                </div>
 
                 {selectedBooking.pricePerKm && (
                   <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-3 sm:p-4">
@@ -537,7 +926,7 @@ const PricingAndFAQ = () => {
             {!searchFilters && (
               <div className="inline-flex bg-white p-1 sm:p-1.5 rounded-full shadow-lg border border-slate-100 relative mx-4">
                 <div
-                  className={`absolute top-1 sm:top-1.5 bottom-1 sm:bottom-1.5 rounded-full bg-linear-to-r from-amber-500 to-orange-600 transition-all duration-300 ease-out shadow-md`}
+                  className="absolute top-1 sm:top-1.5 bottom-1 sm:bottom-1.5 rounded-full bg-linear-to-r from-amber-500 to-orange-600 transition-all duration-300 ease-out shadow-md"
                   style={{
                     left:
                       pricingMode === "one-way"
@@ -729,7 +1118,11 @@ const PricingAndFAQ = () => {
 
                     {(pricingMode === "round-trip" ||
                       pricingMode === "multi-city" ||
-                      pricingMode === "day-rental") && (
+                      pricingMode === "day-rental" ||
+                      car.tripType === "day-rental" ||
+                      car.tripType === "local" ||
+                      (searchFilters?.bookingType === "local" &&
+                        car.pricePerKm)) && (
                       <button
                         onClick={() => handleBooking(car)}
                         className="w-full py-3 sm:py-3.5 md:py-4 rounded-lg sm:rounded-xl bg-slate-900 text-white text-sm sm:text-base font-bold hover:bg-linear-to-r hover:from-amber-500 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-orange-500/25 active:scale-95"

@@ -7,7 +7,8 @@ import {
   Car, 
   History, 
   Clock, 
-  ShieldCheck
+  ShieldCheck,
+  Calendar
 } from 'lucide-react';
 import { fetchUserBookings, cancelBooking } from '../../store/slices/bookingSlice';
 import { Button } from '@/components/ui/button';
@@ -136,23 +137,48 @@ const BookingsPage = () => {
                         <div className="absolute -left-3 top-1/2 w-6 h-6 bg-slate-50 rounded-full hidden md:block transform -translate-y-1/2"></div>
                         
                         <div className="absolute -bottom-3 left-1/2 w-6 h-6 bg-slate-50 rounded-full md:hidden transform -translate-x-1/2"></div>
-                        
-                        <div className="flex md:flex-col items-center md:items-center gap-2 md:gap-0">
-                          <span className="text-orange-400 font-bold text-xs sm:text-sm tracking-widest uppercase md:mb-1">
-                            {dateObj.month}
-                          </span>
-                          <span className="text-3xl sm:text-4xl font-bold tracking-tighter md:mb-1">
-                            {dateObj.day}
-                          </span>
-                          <span className="text-slate-400 text-xs sm:text-sm md:mb-4">
-                            {dateObj.year}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center gap-1.5 bg-slate-800 px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium">
-                          <Clock size={12} className="text-orange-400" />
-                          <span className="text-xs sm:text-sm">{dateObj.time}</span>
-                        </div>
+                       
+                        {booking.selectedPickupDate ? (
+                          <>
+                            <div className="flex md:flex-col items-center md:items-center gap-2 md:gap-0">
+                              <span className="text-orange-400 font-bold text-xs sm:text-sm tracking-widest uppercase md:mb-1">
+                                {new Date(booking.selectedPickupDate).toLocaleDateString('en-US', { month: 'short' })}
+                              </span>
+                              <span className="text-3xl sm:text-4xl font-bold tracking-tighter md:mb-1">
+                                {new Date(booking.selectedPickupDate).toLocaleDateString('en-US', { day: 'numeric' })}
+                              </span>
+                              <span className="text-slate-400 text-xs sm:text-sm md:mb-4">
+                                {new Date(booking.selectedPickupDate).toLocaleDateString('en-US', { year: 'numeric' })}
+                              </span>
+                            </div>
+                            
+                            {booking.selectedPickupTime && (
+                              <div className="flex items-center gap-1.5 bg-slate-800 px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium">
+                                <Clock size={12} className="text-orange-400" />
+                                <span className="text-xs sm:text-sm">{booking.selectedPickupTime}</span>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex md:flex-col items-center md:items-center gap-2 md:gap-0">
+                              <span className="text-orange-400 font-bold text-xs sm:text-sm tracking-widest uppercase md:mb-1">
+                                {dateObj.month}
+                              </span>
+                              <span className="text-3xl sm:text-4xl font-bold tracking-tighter md:mb-1">
+                                {dateObj.day}
+                              </span>
+                              <span className="text-slate-400 text-xs sm:text-sm md:mb-4">
+                                {dateObj.year}
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center gap-1.5 bg-slate-800 px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium">
+                              <Clock size={12} className="text-orange-400" />
+                              <span className="text-xs sm:text-sm">{dateObj.time}</span>
+                            </div>
+                          </>
+                        )}
                       </div>
 
                       <div className="p-4 sm:p-5 md:p-6 flex-1 flex flex-col justify-between">
@@ -173,16 +199,15 @@ const BookingsPage = () => {
                                 </span>
                                 <span className="hidden sm:inline">•</span>
                                 <span className="capitalize text-xs sm:text-sm">
-                                  {booking.tripType === 'oneWay' ? 'One Way' : 'Round Trip'}
+                                  {booking.tripType === 'oneWay' ? 'One Way' : booking.tripType === 'roundTrip' ? 'Round Trip' : 'Multi City'}
                                 </span>
                               </p>
                             </div>
-                            
                             <div className="text-right shrink-0">
                               <p className="text-xl sm:text-2xl font-bold text-slate-900 whitespace-nowrap">
                                 {formatAmount(booking.amount)}
                               </p>
-                              {booking.paymentStatus === 'paid' && (
+                              {booking.paymentStatus === 'completed' && (
                                 <div className="flex items-center justify-end gap-1 text-xs text-emerald-600 font-medium mt-1">
                                   <ShieldCheck size={12} />
                                   <span className="hidden sm:inline">Paid Securely</span>
@@ -207,6 +232,52 @@ const BookingsPage = () => {
                               </div>
                             </div>
                           </div>
+
+                          {booking.selectedPickupDate && booking.selectedPickupTime && (
+                            <div className="bg-linear-to-r from-blue-50 to-indigo-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-blue-200 mb-3 sm:mb-4">
+                              <div className="flex items-start gap-2 sm:gap-3">
+                                <div className="mt-0.5 shrink-0">
+                                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <Clock size={16} className="text-blue-600" />
+                                  </div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs text-blue-600 uppercase tracking-wider font-semibold mb-1.5">
+                                    Scheduled Pickup
+                                  </p>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className="text-sm sm:text-base text-slate-800 font-bold">
+                                      {new Date(booking.selectedPickupDate).toLocaleDateString('en-IN', {
+                                        weekday: 'long',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                      })}
+                                    </p>
+                                    <span className="px-2 py-0.5 bg-blue-600 text-white text-xs font-semibold rounded-full">
+                                      {booking.selectedPickupTime}
+                                    </span>
+                                  </div>
+                                  
+                                  {booking.selectedReturnDate && (
+                                    <div className="mt-2 pt-2 border-t border-blue-200">
+                                      <p className="text-xs text-amber-600 uppercase tracking-wider font-semibold mb-1">
+                                        Return Date
+                                      </p>
+                                      <p className="text-xs sm:text-sm text-slate-700 font-medium">
+                                        {new Date(booking.selectedReturnDate).toLocaleDateString('en-IN', {
+                                          weekday: 'short',
+                                          month: 'long',
+                                          day: 'numeric',
+                                          year: 'numeric'
+                                        })}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 pt-3 border-t border-slate-100">

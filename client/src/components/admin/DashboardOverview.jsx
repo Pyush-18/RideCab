@@ -34,7 +34,6 @@ const DashboardOverview = ({
   transactions,
   darkMode,
 }) => {
-  
   const colors = {
     primary: "#f59e0b",
     secondary: "#10b981",
@@ -49,9 +48,22 @@ const DashboardOverview = ({
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-slate-900 text-white text-xs px-3 py-2 rounded-full shadow-xl flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-          <span className="font-medium">{`${label}: ${payload[0].value}`}</span>
+        <div
+          className="px-3 py-2 rounded-lg shadow-xl"
+          style={{
+            backgroundColor: darkMode ? "#1e293b" : "#ffffff",
+            border: `1px solid ${darkMode ? "#334155" : "#e2e8f0"}`,
+          }}
+        >
+          <p
+            className="font-semibold text-sm"
+            style={{ color: colors.textMain }}
+          >
+            {label}
+          </p>
+          <p className="font-bold text-lg" style={{ color: colors.primary }}>
+            {payload[0].value}
+          </p>
         </div>
       );
     }
@@ -293,11 +305,15 @@ const DashboardOverview = ({
                 </Pie>
                 <Tooltip
                   contentStyle={{
+                    backgroundColor: darkMode ? "#1e293b" : "#ffffff",
                     borderRadius: "12px",
-                    border: "none",
+                    border: `1px solid ${darkMode ? "#334155" : "#e2e8f0"}`,
                     boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                   }}
-                  itemStyle={{ color: colors.textMain, fontWeight: "bold" }}
+                  itemStyle={{
+                    color: colors.textMain,
+                    fontWeight: "bold",
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>

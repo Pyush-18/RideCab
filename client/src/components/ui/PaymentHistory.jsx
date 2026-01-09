@@ -92,18 +92,40 @@ const PaymentHistory = () => {
   };
 
   const downloadReceipt = (payment) => {
+    const bookingDetails = payment.bookingDetails || {};
+    const scheduledPickup = bookingDetails.selectedPickupDate && bookingDetails.selectedPickupTime
+      ? `\nScheduled Pickup: ${new Date(bookingDetails.selectedPickupDate).toLocaleDateString('en-IN', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })} at ${bookingDetails.selectedPickupTime}`
+      : '';
+    
+    const returnDate = bookingDetails.selectedReturnDate
+      ? `\nReturn Date: ${new Date(bookingDetails.selectedReturnDate).toLocaleDateString('en-IN', {
+          weekday: 'short',
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric'
+        })}`
+      : '';
+
     const receiptText = `
-        FIRSTCAB - Payment Receipt
-        ==========================
-        Payment ID: ${payment.razorpayPaymentId || payment.id}
-        Date: ${new Date(payment.createdAt).toLocaleString()}
-        Status: ${payment.status.toUpperCase()}
-        --------------------------
-        Booking: ${payment.bookingDetails?.carName || "Ride"} 
-        Route: ${payment.bookingDetails?.route || "N/A"}
-        Total: ${formatAmount(payment.amount)}
-        
-        Thank you for riding with us!
+FIRSTCAB - Payment Receipt
+==========================
+Payment ID: ${payment.razorpayPaymentId || payment.id}
+Date: ${new Date(payment.createdAt).toLocaleString()}
+Status: ${payment.status.toUpperCase()}
+--------------------------
+Booking: ${bookingDetails.carName || "Ride"} 
+Model: ${bookingDetails.carModel || "N/A"}
+Route: ${bookingDetails.route || "N/A"}
+Trip Type: ${bookingDetails.tripType || "N/A"}${scheduledPickup}${returnDate}
+--------------------------
+Total: ${formatAmount(payment.amount)}
+
+Thank you for riding with us!
     `.trim();
 
     const blob = new Blob([receiptText], { type: "text/plain" });
@@ -207,6 +229,7 @@ const PaymentHistory = () => {
               {payments.map((payment, index) => {
                 const status = getStatusConfig(payment.status);
                 const { date, time } = formatDate(payment.createdAt);
+                const bookingDetails = payment.bookingDetails || {};
 
                 return (
                   <motion.div
@@ -225,7 +248,7 @@ const PaymentHistory = () => {
                         <div
                           className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0 ${status.bg} ${status.color}`}
                         >
-                          {payment.bookingDetails?.carName ? (
+                          {bookingDetails.carName ? (
                             <Car size={16} className="sm:w-4.5 sm:h-4.5" />
                           ) : (
                             <CreditCard size={16} className="sm:w-4.5 sm:h-4.5" />
@@ -235,7 +258,7 @@ const PaymentHistory = () => {
                         <div className="space-y-1 flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                             <span className="font-semibold text-slate-900 text-sm sm:text-base">
-                              {payment.bookingDetails?.carName || "Cab Booking"}
+                              {bookingDetails.carName || "Cab Booking"}
                             </span>
                             <span className="text-xs text-slate-400 font-mono">
                               #{payment.razorpayPaymentId?.slice(-6) || "ID"}
@@ -246,19 +269,52 @@ const PaymentHistory = () => {
                             <span className="flex items-center gap-1">
                               <CalendarDays size={11} className="sm:w-3 sm:h-3" /> {date}
                             </span>
-                            {payment.bookingDetails?.route && (
+                            {bookingDetails.route && (
                               <>
                                 <span className="w-1 h-1 rounded-full bg-slate-300 hidden sm:block"></span>
                                 <span
                                   className="flex items-center gap-1 truncate max-w-50 sm:max-w-none"
-                                  title={payment.bookingDetails.route}
+                                  title={bookingDetails.route}
                                 >
                                   <MapPin size={11} className="sm:w-3 sm:h-3 shrink-0" />
-                                  <span className="truncate">{payment.bookingDetails.route}</span>
+                                  <span className="truncate">{bookingDetails.route}</span>
                                 </span>
                               </>
                             )}
                           </div>
+
+                          {bookingDetails.selectedPickupDate && bookingDetails.selectedPickupTime && (
+                            <div className="mt-2 pt-2 border-t border-slate-100">
+                              <div className="flex items-center gap-2 text-xs">
+                                <div className="flex items-center gap-1 text-blue-600 font-medium">
+                                  <Clock size={11} className="sm:w-3 sm:h-3" />
+                                  <span>Scheduled:</span>
+                                </div>
+                                <span className="text-slate-600">
+                                  {new Date(bookingDetails.selectedPickupDate).toLocaleDateString('en-IN', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })} at {bookingDetails.selectedPickupTime}
+                                </span>
+                              </div>
+                              {bookingDetails.selectedReturnDate && (
+                                <div className="flex items-center gap-2 text-xs mt-1">
+                                  <div className="flex items-center gap-1 text-amber-600 font-medium">
+                                    <CalendarDays size={11} className="sm:w-3 sm:h-3" />
+                                    <span>Return:</span>
+                                  </div>
+                                  <span className="text-slate-600">
+                                    {new Date(bookingDetails.selectedReturnDate).toLocaleDateString('en-IN', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric'
+                                    })}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
 
