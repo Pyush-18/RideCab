@@ -25,6 +25,7 @@ import { DateInput, SelectInput, TimeInput } from "../shared/FormInput";
 import { fetchActiveRoutes } from "../../store/slices/routeSlice";
 import { fetchAllPricing } from "../../store/slices/pricingSlice";
 import { toast } from "sonner";
+import LocationMapSelector from "../shared/LocationMapSelector";
 
 const RideBookingCard = () => {
   const dispatch = useDispatch();
@@ -44,6 +45,12 @@ const RideBookingCard = () => {
   const [selectedAirport, setSelectedAirport] = useState("");
   const [searchError, setSearchError] = useState("");
   const [locationSearch, setLocationSearch] = useState("");
+  const [pickupSubLocation, setPickupSubLocation] = useState("");
+  const [dropSubLocation, setDropSubLocation] = useState("");
+  const [showPickupMap, setShowPickupMap] = useState(false);
+  const [showDropMap, setShowDropMap] = useState(false);
+  const [pickupLocationData, setPickupLocationData] = useState(null);
+  const [dropLocationData, setDropLocationData] = useState(null);
 
   useEffect(() => {
     dispatch(fetchActiveRoutes());
@@ -139,6 +146,15 @@ const RideBookingCard = () => {
       desc: "Quick and convenient local trips within your city.",
     },
   ];
+
+  const OUTSTATION_CITIES = ["Kharagpur", "Kolkata"];
+  const CITY_RADIUS_KM = 25;
+
+  const getLinkedCity = (selectedCity) => {
+    if (selectedCity === "Kharagpur") return "Kolkata";
+    if (selectedCity === "Kolkata") return "Kharagpur";
+    return "";
+  };
 
   const benefits = [
     {
@@ -238,6 +254,18 @@ const RideBookingCard = () => {
         return null;
       }
 
+      // Additional validation for one-way trips
+      if (tripType === "oneway") {
+        if (!pickupSubLocation) {
+          setSearchError(`Please enter pickup location in ${pickupLocation}`);
+          return null;
+        }
+        if (!dropSubLocation) {
+          setSearchError(`Please enter drop location in ${dropLocation}`);
+          return null;
+        }
+      }
+
       const normalizedPickup = normalize(pickupLocation);
       const normalizedDrop = normalize(dropLocation);
 
@@ -253,12 +281,32 @@ const RideBookingCard = () => {
         tripType: mappedTripType,
         pickupLocation,
         dropLocation,
+        ...(tripType === "oneway" && {
+          pickupSubLocation,
+          dropSubLocation,
+          radiusKm: CITY_RADIUS_KM,
+          pickupCoordinates: pickupLocationData
+            ? {
+                lat: pickupLocationData.lat,
+                lng: pickupLocationData.lng,
+                placeId: pickupLocationData.placeId,
+              }
+            : null,
+          dropCoordinates: dropLocationData
+            ? {
+                lat: dropLocationData.lat,
+                lng: dropLocationData.lng,
+                placeId: dropLocationData.placeId,
+              }
+            : null,
+        }),
       };
 
       if (tripType === "round") {
         searchParams.returnDate = formatDate(returnDate);
       }
 
+      // Rest of the validation logic remains the same...
       const matchingRoutes = routes.filter(
         (r) =>
           r.tripType === "outstation" &&
@@ -335,8 +383,7 @@ const RideBookingCard = () => {
 
   const handleSearch = () => {
     if (!isAuthenticated) {
-      toast.info("Please login to search for pricing");
-      navigate("/");
+      navigate("/auth");
       return;
     }
 
@@ -589,26 +636,99 @@ const RideBookingCard = () => {
                     </div>
 
                     <div className="space-y-4 sm:space-y-5">
+                      {/* City Selection */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-5 relative">
                         <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-full shadow-md border border-slate-100 items-center justify-center">
                           <ArrowRight size={14} className="text-slate-400" />
                         </div>
+
                         <SelectInput
                           icon={MapPin}
                           placeholder="From City"
                           value={pickupLocation}
-                          onValueChange={setPickupLocation}
-                          options={cities}
+                          onValueChange={(value) => {
+                            setPickupLocation(value);
+                            setDropLocation(getLinkedCity(value));
+                            setPickupSubLocation("");
+                            setDropSubLocation("");
+                            setShowPickupMap(false);
+                            setShowDropMap(false);
+                          }}
+                          options={
+                            tripType === "oneway" ? OUTSTATION_CITIES : cities
+                          }
                         />
+
                         <SelectInput
                           icon={MapPin}
                           placeholder="To City"
                           value={dropLocation}
-                          onValueChange={setDropLocation}
-                          options={cities}
+                          onValueChange={(value) => {
+                            setDropLocation(value);
+                            setDropSubLocation("");
+                            setShowDropMap(false);
+                          }}
+                          options={
+                            tripType === "oneway"
+                              ? [
+                                  getLinkedCity(pickupLocation) ||
+                                    "Select From City First",
+                                ]
+                              : cities
+                          }
+                          disabled={tripType === "oneway"}
                         />
                       </div>
 
+                      {tripType === "oneway" && pickupLocation && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-slate-700">
+                            Pickup Location in {pickupLocation} (within{" "}
+                            {CITY_RADIUS_KM}km radius)
+                          </Label>
+                          <LocationMapSelector
+                            value={pickupSubLocation}
+                            onChange={setPickupSubLocation}
+                            placeholder={`Search pickup address in ${pickupLocation}...`}
+                            cityName={pickupLocation}
+                            radiusKm={CITY_RADIUS_KM}
+                            onLocationSelect={(locationData) => {
+                              setPickupLocationData(locationData);
+                              console.log(
+                                "Pickup Location Selected:",
+                                locationData
+                              );
+                            }}
+                            className="w-full pl-10 pr-4 py-5 sm:py-6 border-2 border-slate-200 rounded-xl text-sm sm:text-base focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+                          />
+                        </div>
+                      )}
+
+                      {tripType === "oneway" && dropLocation && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-slate-700">
+                            Drop Location in {dropLocation} (within{" "}
+                            {CITY_RADIUS_KM}km radius)
+                          </Label>
+                          <LocationMapSelector
+                            value={dropSubLocation}
+                            onChange={setDropSubLocation}
+                            placeholder={`Search drop address in ${dropLocation}...`}
+                            cityName={dropLocation}
+                            radiusKm={CITY_RADIUS_KM}
+                            onLocationSelect={(locationData) => {
+                              setDropLocationData(locationData);
+                              console.log(
+                                "Drop Location Selected:",
+                                locationData
+                              );
+                            }}
+                            className="w-full pl-10 pr-4 py-5 sm:py-6 border-2 border-slate-200 rounded-xl text-sm sm:text-base focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+                          />
+                        </div>
+                      )}
+
+                      {/* Date and Time Selection */}
                       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-5">
                         <DateInput
                           icon={Calendar}

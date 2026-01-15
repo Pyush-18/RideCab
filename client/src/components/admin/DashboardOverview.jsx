@@ -25,6 +25,7 @@ import {
   YAxis,
   Label,
 } from "recharts";
+import { ScrollArea } from "../ui/scroll-area";
 
 const DashboardOverview = ({
   stats,
@@ -319,20 +320,29 @@ const DashboardOverview = ({
             </ResponsiveContainer>
           </div>
 
-          <div className="flex justify-center gap-6 mt-4 w-full">
-            {carTypeData.map((item, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <div
-                  className="w-8 h-1 rounded-full mb-2"
-                  style={{ backgroundColor: item.color }}
-                ></div>
-                <span className="text-xs font-medium opacity-60">
-                  {item.name}
-                </span>
-                <span className="text-sm font-bold">{item.value}%</span>
-              </div>
-            ))}
-          </div>
+       <ScrollArea className="w-full mt-4 max-h-32 overflow-y-auto custom-scrollbar">
+  <div className="grid grid-cols-2 gap-3 px-2">
+    {carTypeData.map((item, i) => (
+      <div 
+        key={i} 
+        className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+      >
+        <div
+          className="w-3 h-3 rounded-full shrink-0"
+          style={{ backgroundColor: item.color }}
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium opacity-60 truncate">
+            {item.name}
+          </p>
+          <p className="text-sm font-bold">
+            {item.value}%
+          </p>
+        </div>
+      </div>
+    ))}
+  </div>
+</ScrollArea>
         </Card>
       </div>
 

@@ -566,8 +566,7 @@ const PricingAndFAQ = () => {
 
   const handleBooking = async (car, route = null) => {
     if (!isAuthenticated) {
-      toast.info("Please login to book a cab");
-      navigate("/");
+      navigate("/auth");
       return;
     }
 
@@ -585,6 +584,18 @@ const PricingAndFAQ = () => {
       luggage: car.luggage,
       tripType: tripTypeValue,
       bookingDate: new Date().toISOString(),
+      ...(searchFilters?.pickupSubLocation && {
+        pickupSubLocation: searchFilters.pickupSubLocation,
+      }),
+      ...(searchFilters?.dropSubLocation && {
+        dropSubLocation: searchFilters.dropSubLocation,
+      }),
+      ...(searchFilters?.pickupCoordinates && {
+        pickupCoordinates: searchFilters.pickupCoordinates,
+      }),
+      ...(searchFilters?.dropCoordinates && {
+        dropCoordinates: searchFilters.dropCoordinates,
+      }),
     };
 
     let amount;
@@ -720,145 +731,216 @@ const PricingAndFAQ = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4"
-            onClick={() => !processingPayment && setShowPaymentModal(false)}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 md:p-8 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={() => !processingPayment && setShowPaymentModal(false)}
+            />
+
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh]"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4 sm:mb-6">
-                Confirm Booking
-              </h3>
-
-              <div className="space-y-3 sm:space-y-4 mb-5 sm:mb-6">
-                <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-3 sm:p-4">
-                  <p className="text-xs sm:text-sm text-slate-500 mb-1">
-                    Vehicle
-                  </p>
-                  <p className="font-bold text-base sm:text-lg text-slate-900">
-                    {selectedBooking.carName}
-                  </p>
-                  <p className="text-xs sm:text-sm text-slate-600">
-                    {selectedBooking.carModel}
+              <div className="px-6 py-4 sm:py-5 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 z-20">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">
+                    Confirm Trip
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    Review your booking details
                   </p>
                 </div>
-
-                {selectedBooking.route && (
-                  <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-3 sm:p-4">
-                    <p className="text-xs sm:text-sm text-slate-500 mb-1">
-                      Route
-                    </p>
-                    <p className="font-semibold text-sm sm:text-base text-slate-900">
-                      {selectedBooking.route}
-                    </p>
-                  </div>
-                )}
-
-                <DateTimeSection
-                  tripType={selectedBooking.tripType}
-                  pickupDate={modalPickupDate.toISOString()}
-                  pickupTime={modalPickupTime}
-                  returnDate={modalReturnDate.toISOString()}
-                  onPickupDateChange={setModalPickupDate}
-                  onPickupTimeChange={setModalPickupTime}
-                  onReturnDateChange={setModalReturnDate}
-                />
-
-                <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-3 sm:p-4">
-                  <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-2">
-                    Mobile Number
-                  </label>
-                  <input
-                    type="tel"
-                    value={modalMobileNumber}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, "");
-                      if (value.length <= 10) {
-                        setModalMobileNumber(value);
-                      }
-                    }}
-                    placeholder="Enter 10-digit mobile number"
-                    className="w-full px-3 py-2 border-2 border-slate-200 rounded-lg bg-white focus:border-blue-500 focus:outline-none text-sm"
-                    maxLength={10}
-                  />
-                  {modalMobileNumber && modalMobileNumber.length !== 10 && (
-                    <p className="text-xs text-red-500 mt-1">
-                      Mobile number must be 10 digits
-                    </p>
-                  )}
-                </div>
-
-                {selectedBooking.pricePerKm && (
-                  <div className="bg-slate-50 rounded-xl sm:rounded-2xl p-3 sm:p-4">
-                    <p className="text-xs sm:text-sm text-slate-500 mb-1">
-                      Pricing
-                    </p>
-                    <p className="font-semibold text-sm sm:text-base text-slate-900">
-                      {selectedBooking.pricePerKm}/km • Min{" "}
-                      {selectedBooking.minKm}
-                    </p>
-                  </div>
-                )}
-
-                <div className="bg-amber-50 border-2 border-amber-200 rounded-xl sm:rounded-2xl p-3 sm:p-4">
-                  <p className="text-xs sm:text-sm text-amber-700 mb-1">
-                    Total Amount
-                  </p>
-                  <p className="text-2xl sm:text-3xl font-bold text-amber-600">
-                    {selectedBooking.amount}
-                  </p>
-                </div>
-
-                {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex items-start gap-2 sm:gap-3">
-                    <AlertCircle
-                      className="text-red-500 shrink-0 mt-0.5"
-                      size={18}
-                    />
-                    <p className="text-xs sm:text-sm text-red-800">{error}</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-2 sm:gap-3">
                 <button
                   onClick={() =>
                     !processingPayment && setShowPaymentModal(false)
                   }
-                  disabled={processingPayment}
-                  className="flex-1 py-2.5 sm:py-3 rounded-lg sm:rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm sm:text-base hover:bg-slate-50 transition-colors disabled:opacity-50"
+                  className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors text-slate-600"
                 >
-                  Cancel
+                  <X size={20} />
                 </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-white relative">
+           
+                <div className="flex items-center gap-4 p-4 bg-linear-to-br from-blue-50 to-indigo-50/50 border border-blue-100/50 rounded-2xl">
+                  <div className="h-12 w-12 bg-white rounded-xl flex items-center justify-center shadow-sm text-blue-600 shrink-0">
+                    <Luggage size={24} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">
+                      {selectedBooking.carName}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs font-medium text-slate-500 bg-white/60 px-2 py-0.5 rounded-md border border-blue-100">
+                        {selectedBooking.carModel}
+                      </span>
+                      {selectedBooking.capacity && (
+                        <span className="flex items-center gap-1 text-xs text-slate-500">
+                          <Users size={12} /> {selectedBooking.capacity}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {selectedBooking.route && (
+                  <div className="relative pl-2">
+                    <div className="absolute left-4 top-3 bottom-3 w-0.5 border-l-2 border-dashed border-slate-300" />
+                    <div className="space-y-6">
+                      <div className="relative flex items-start gap-4">
+                        <div className="relative z-10 w-4 h-4 mt-1 rounded-full border-[3px] border-green-500 bg-white shrink-0 shadow-sm" />
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+                            Pickup
+                          </p>
+                          <p className="text-sm font-medium text-slate-900">
+                            {selectedBooking.route.split("→")[0] ||
+                              selectedBooking.from}
+                          </p>
+                          {selectedBooking.pickupSubLocation && (
+                            <p className="text-xs text-slate-500 mt-1">
+                              {selectedBooking.pickupSubLocation}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="relative flex items-start gap-4">
+                        <div className="relative z-10 w-4 h-4 mt-1 rounded-full border-[3px] border-red-500 bg-white shrink-0 shadow-sm" />
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+                            Drop
+                          </p>
+                          <p className="text-sm font-medium text-slate-900">
+                            {selectedBooking.route.split("→")[1] ||
+                              selectedBooking.to}
+                          </p>
+                          {selectedBooking.dropSubLocation && (
+                            <p className="text-xs text-slate-500 mt-1">
+                              {selectedBooking.dropSubLocation}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-slate-50 rounded-2xl border border-slate-100 relative z-10">
+                  <DateTimeSection
+                    tripType={selectedBooking.tripType}
+                    pickupDate={modalPickupDate.toISOString()}
+                    pickupTime={modalPickupTime}
+                    returnDate={modalReturnDate.toISOString()}
+                    onPickupDateChange={setModalPickupDate}
+                    onPickupTimeChange={setModalPickupTime}
+                    onReturnDateChange={setModalReturnDate}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-slate-700 ml-1">
+                    Contact Number
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-slate-400 font-bold text-sm">
+                        +91
+                      </span>
+                    </div>
+                    <input
+                      type="tel"
+                      value={modalMobileNumber}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, "");
+                        if (value.length <= 10) setModalMobileNumber(value);
+                      }}
+                      placeholder="Enter 10-digit mobile number"
+                      className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
+                      maxLength={10}
+                    />
+                  </div>
+                  {modalMobileNumber && modalMobileNumber.length !== 10 && (
+                    <div className="flex items-center gap-1.5 text-xs text-rose-500 font-medium ml-1">
+                      <AlertCircle size={12} />
+                      <span>Valid 10-digit number required</span>
+                    </div>
+                  )}
+                </div>
+
+                {selectedBooking.pricePerKm && (
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100">
+                    <span className="text-xs text-slate-500 font-medium">
+                      Rate Card
+                    </span>
+                    <span className="text-xs text-slate-700 font-bold">
+                      {selectedBooking.pricePerKm}/km • Min{" "}
+                      {selectedBooking.minKm}km
+                    </span>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-3">
+                    <AlertCircle
+                      className="text-rose-500 shrink-0 mt-0.5"
+                      size={16}
+                    />
+                    <p className="text-xs text-rose-600 font-medium">{error}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 sm:p-6 bg-white border-t border-slate-100 shrink-0 z-20 pb-8 sm:pb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-xs text-slate-500 font-medium">
+                      Total Fare
+                    </p>
+                    <p className="text-2xl font-black text-slate-900 tracking-tight">
+                      {selectedBooking.amount}
+                    </p>
+                  </div>
+                </div>
+
                 <button
                   onClick={handlePaymentConfirm}
-                  disabled={loading || processingPayment}
-                  className="flex-1 py-2.5 sm:py-3 rounded-lg sm:rounded-xl bg-linear-to-r from-amber-500 to-orange-600 text-white font-bold text-sm sm:text-base hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                  disabled={processingPayment}
+                  className="w-full group relative overflow-hidden rounded-xl bg-slate-900 px-4 py-3.5 text-white shadow-lg shadow-slate-900/20 transition-all hover:bg-slate-800 active:scale-[0.98] disabled:opacity-70"
                 >
-                  {loading || processingPayment ? (
-                    <>
-                      <Loader className="animate-spin" size={18} />
-                      <span className="text-sm sm:text-base">
-                        Processing...
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      Pay Now
-                      <ArrowRight size={18} />
-                    </>
-                  )}
+                  <div className="relative flex items-center justify-center gap-2">
+                    {processingPayment ? (
+                      <>
+                        <Loader className="animate-spin" size={18} />
+                        <span className="font-semibold text-sm">
+                          Processing...
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-bold text-sm">
+                          Pay & Book Now
+                        </span>
+                        <ArrowRight
+                          size={18}
+                          className="group-hover:translate-x-1 transition-transform"
+                        />
+                      </>
+                    )}
+                  </div>
                 </button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-
       <section className="py-12 sm:py-16 md:py-20 lg:py-24 px-3 sm:px-4 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 sm:w-96 sm:h-96 md:w-125 md:h-125 bg-amber-200/20 rounded-full blur-[80px] sm:blur-[100px] -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-64 h-64 sm:w-96 sm:h-96 md:w-125 md:h-125 bg-orange-200/20 rounded-full blur-[80px] sm:blur-[100px] translate-y-1/2 -translate-x-1/2" />
@@ -904,10 +986,22 @@ const PricingAndFAQ = () => {
                         )}
                         {searchFilters.pickupLocation &&
                           searchFilters.dropLocation && (
-                            <p>
-                              Route: {searchFilters.pickupLocation} →{" "}
-                              {searchFilters.dropLocation}
-                            </p>
+                            <>
+                              <p>
+                                Route: {searchFilters.pickupLocation} →{" "}
+                                {searchFilters.dropLocation}
+                              </p>
+                              {searchFilters.pickupSubLocation && (
+                                <p className="pl-4">
+                                  Pickup: {searchFilters.pickupSubLocation}
+                                </p>
+                              )}
+                              {searchFilters.dropSubLocation && (
+                                <p className="pl-4">
+                                  Drop: {searchFilters.dropSubLocation}
+                                </p>
+                              )}
+                            </>
                           )}
                         <p>Found {pricingCards.length} available options</p>
                       </div>

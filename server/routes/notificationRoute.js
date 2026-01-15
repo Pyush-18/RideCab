@@ -7,12 +7,12 @@ import {
   getUnreadNotificationsCount,
 } from "../services/notificationService.js";
 import admin from "../config/firebase.js";
-import { verifyToken } from "../middleware/authMiddleware.js";
+import { authenticateUser } from "../middleware/authMiddleware.js";
 
 const router = Router();
 const db = admin.firestore();
 
-router.post('/booking-created', verifyToken, async (req, res) => {
+router.post('/booking-created', authenticateUser, async (req, res) => {
   try {
     const { bookingId, bookingData } = req.body;
     const userId = req.user.uid;

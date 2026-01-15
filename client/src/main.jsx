@@ -36,14 +36,15 @@ const AuthInitializer = ({ children }) => {
 const AppRoutes = () => {
   return (
     <>
+      <div id="recaptcha-container"></div>
       <ScrollToTop />
       <Routes>
         <Route
           element={
             <UserRoute>
               <UserLayout />
-              
-      <FloatingContactWidget />
+
+              <FloatingContactWidget />
             </UserRoute>
           }
         >

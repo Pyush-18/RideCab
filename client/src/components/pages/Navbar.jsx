@@ -20,7 +20,7 @@ export const Navbar = () => {
 
   const handleLogout = () => {
     dispatch(logoutUser());
-    navigate('/');
+    navigate("/");
     setIsMenuOpen(false);
   };
 
@@ -77,7 +77,10 @@ export const Navbar = () => {
                       <User size={16} className="text-slate-600" />
                     )}
                     <span className="text-sm font-medium text-slate-700">
-                      {user?.displayName || user?.email?.split('@')[0]}
+                      {user?.displayName ||
+                        user?.phoneNumber ||
+                        user?.email?.split("@")[0] ||
+                        "User"}
                     </span>
                   </div>
                   <button
@@ -151,7 +154,10 @@ export const Navbar = () => {
                           <User size={16} className="text-slate-600" />
                         )}
                         <span className="text-sm font-medium text-slate-700">
-                          {user?.displayName || user?.email?.split('@')[0]}
+                          {user?.displayName ||
+                            user?.phoneNumber ||
+                            user?.email?.split("@")[0] ||
+                            "User"}
                         </span>
                       </div>
                       <button

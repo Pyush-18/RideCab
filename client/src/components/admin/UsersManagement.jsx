@@ -322,18 +322,46 @@ const UsersManagement = ({ users, darkMode, cardClasses }) => {
                                   {booking.from} → {booking.to}
                                 </span>
                               </div>
-
+                              {(booking.pickupSubLocation ||
+                                booking.dropSubLocation) && (
+                                <div className="space-y-1 mt-2">
+                                  {booking.pickupSubLocation && (
+                                    <div className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-lg">
+                                      <MapPin
+                                        size={14}
+                                        className="text-green-600"
+                                      />
+                                      <span className="text-xs font-medium text-green-900">
+                                        Pickup: {booking.pickupSubLocation}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {booking.dropSubLocation && (
+                                    <div className="flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-lg">
+                                      <MapPin
+                                        size={14}
+                                        className="text-red-600"
+                                      />
+                                      <span className="text-xs font-medium text-red-900">
+                                        Drop: {booking.dropSubLocation}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                               {booking.mobileNumber && (
                                 <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg">
                                   <div className="flex items-center gap-2">
-                                  <TabletSmartphoneIcon size={16} className="text-yellow-500" />
-                                  <span className="text-sm font-medium text-slate-600">
-                                    {booking.mobileNumber}
-                                  </span>
+                                    <TabletSmartphoneIcon
+                                      size={16}
+                                      className="text-yellow-500"
+                                    />
+                                    <span className="text-sm font-medium text-slate-600">
+                                      {booking.mobileNumber}
+                                    </span>
                                   </div>
                                 </div>
                               )}
-
                               {booking.selectedPickupDate &&
                                 booking.selectedPickupTime && (
                                   <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-lg">
@@ -372,7 +400,6 @@ const UsersManagement = ({ users, darkMode, cardClasses }) => {
                                   </span>
                                 </div>
                               )}
-
                               <div className="flex gap-4 text-sm">
                                 <span
                                   className={

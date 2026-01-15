@@ -22,6 +22,7 @@ const PaymentHistory = () => {
   const dispatch = useDispatch();
   const { payments, loading } = useSelector((state) => state.payment);
   const { user } = useSelector((state) => state.auth);
+  console.log(payments)
 
   useEffect(() => {
     dispatch(fetchUserPayments());
@@ -93,23 +94,28 @@ const PaymentHistory = () => {
 
   const downloadReceipt = (payment) => {
     const bookingDetails = payment.bookingDetails || {};
-    const scheduledPickup = bookingDetails.selectedPickupDate && bookingDetails.selectedPickupTime
-      ? `\nScheduled Pickup: ${new Date(bookingDetails.selectedPickupDate).toLocaleDateString('en-IN', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })} at ${bookingDetails.selectedPickupTime}`
-      : '';
-    
+    const scheduledPickup =
+      bookingDetails.selectedPickupDate && bookingDetails.selectedPickupTime
+        ? `\nScheduled Pickup: ${new Date(
+            bookingDetails.selectedPickupDate
+          ).toLocaleDateString("en-IN", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })} at ${bookingDetails.selectedPickupTime}`
+        : "";
+
     const returnDate = bookingDetails.selectedReturnDate
-      ? `\nReturn Date: ${new Date(bookingDetails.selectedReturnDate).toLocaleDateString('en-IN', {
-          weekday: 'short',
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric'
+      ? `\nReturn Date: ${new Date(
+          bookingDetails.selectedReturnDate
+        ).toLocaleDateString("en-IN", {
+          weekday: "short",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
         })}`
-      : '';
+      : "";
 
     const receiptText = `
 FIRSTCAB - Payment Receipt
@@ -230,7 +236,7 @@ Thank you for riding with us!
                 const status = getStatusConfig(payment.status);
                 const { date, time } = formatDate(payment.createdAt);
                 const bookingDetails = payment.bookingDetails || {};
-
+                console.log(bookingDetails)
                 return (
                   <motion.div
                     key={payment.id}
@@ -251,7 +257,10 @@ Thank you for riding with us!
                           {bookingDetails.carName ? (
                             <Car size={16} className="sm:w-4.5 sm:h-4.5" />
                           ) : (
-                            <CreditCard size={16} className="sm:w-4.5 sm:h-4.5" />
+                            <CreditCard
+                              size={16}
+                              className="sm:w-4.5 sm:h-4.5"
+                            />
                           )}
                         </div>
 
@@ -267,7 +276,11 @@ Thank you for riding with us!
 
                           <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 text-xs sm:text-sm text-slate-500">
                             <span className="flex items-center gap-1">
-                              <CalendarDays size={11} className="sm:w-3 sm:h-3" /> {date}
+                              <CalendarDays
+                                size={11}
+                                className="sm:w-3 sm:h-3"
+                              />{" "}
+                              {date}
                             </span>
                             {bookingDetails.route && (
                               <>
@@ -276,41 +289,101 @@ Thank you for riding with us!
                                   className="flex items-center gap-1 truncate max-w-50 sm:max-w-none"
                                   title={bookingDetails.route}
                                 >
-                                  <MapPin size={11} className="sm:w-3 sm:h-3 shrink-0" />
-                                  <span className="truncate">{bookingDetails.route}</span>
+                                  <MapPin
+                                    size={11}
+                                    className="sm:w-3 sm:h-3 shrink-0"
+                                  />
+                                  <span className="truncate">
+                                    {bookingDetails.route}
+                                  </span>
                                 </span>
                               </>
                             )}
                           </div>
 
-                          {bookingDetails.selectedPickupDate && bookingDetails.selectedPickupTime && (
-                            <div className="mt-2 pt-2 border-t border-slate-100">
-                              <div className="flex items-center gap-2 text-xs">
-                                <div className="flex items-center gap-1 text-blue-600 font-medium">
-                                  <Clock size={11} className="sm:w-3 sm:h-3" />
-                                  <span>Scheduled:</span>
-                                </div>
-                                <span className="text-slate-600">
-                                  {new Date(bookingDetails.selectedPickupDate).toLocaleDateString('en-IN', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                  })} at {bookingDetails.selectedPickupTime}
-                                </span>
-                              </div>
-                              {bookingDetails.selectedReturnDate && (
-                                <div className="flex items-center gap-2 text-xs mt-1">
-                                  <div className="flex items-center gap-1 text-amber-600 font-medium">
-                                    <CalendarDays size={11} className="sm:w-3 sm:h-3" />
-                                    <span>Return:</span>
+                          {bookingDetails.selectedPickupDate &&
+                            bookingDetails.selectedPickupTime && (
+                              <div className="mt-2 pt-2 border-t border-slate-100">
+                                <div className="flex items-center gap-2 text-xs">
+                                  <div className="flex items-center gap-1 text-blue-600 font-medium">
+                                    <Clock
+                                      size={11}
+                                      className="sm:w-3 sm:h-3"
+                                    />
+                                    <span>Scheduled:</span>
                                   </div>
                                   <span className="text-slate-600">
-                                    {new Date(bookingDetails.selectedReturnDate).toLocaleDateString('en-IN', {
-                                      month: 'short',
-                                      day: 'numeric',
-                                      year: 'numeric'
-                                    })}
+                                    {new Date(
+                                      bookingDetails.selectedPickupDate
+                                    ).toLocaleDateString("en-IN", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })}{" "}
+                                    at {bookingDetails.selectedPickupTime}
                                   </span>
+                                </div>
+                                {bookingDetails.selectedReturnDate && (
+                                  <div className="flex items-center gap-2 text-xs mt-1">
+                                    <div className="flex items-center gap-1 text-amber-600 font-medium">
+                                      <CalendarDays
+                                        size={11}
+                                        className="sm:w-3 sm:h-3"
+                                      />
+                                      <span>Return:</span>
+                                    </div>
+                                    <span className="text-slate-600">
+                                      {new Date(
+                                        bookingDetails.selectedReturnDate
+                                      ).toLocaleDateString("en-IN", {
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric",
+                                      })}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          {/* Pickup & Drop Locations */}
+                          {(bookingDetails.pickupSubLocation ||
+                            bookingDetails.dropSubLocation) && (
+                            <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
+                              {bookingDetails.pickupSubLocation && (
+                                <div className="flex items-start gap-2">
+                                  <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                                    <MapPin
+                                      size={12}
+                                      className="text-green-600"
+                                    />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[10px] uppercase tracking-wide text-green-600 font-semibold">
+                                      Pickup Location
+                                    </p>
+                                    <p className="text-xs sm:text-sm text-slate-700 font-medium leading-snug break-words">
+                                      {bookingDetails.pickupSubLocation}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {bookingDetails.dropSubLocation && (
+                                <div className="flex items-start gap-2">
+                                  <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                                    <MapPin
+                                      size={12}
+                                      className="text-red-600"
+                                    />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[10px] uppercase tracking-wide text-red-600 font-semibold">
+                                      Drop Location
+                                    </p>
+                                    <p className="text-xs sm:text-sm text-slate-700 font-medium leading-snug break-words">
+                                      {bookingDetails.dropSubLocation}
+                                    </p>
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -346,7 +419,8 @@ Thank you for riding with us!
 
                     {payment.status === "failed" && payment.failureReason && (
                       <div className="mt-2 ml-0 sm:ml-14 text-xs text-rose-600 bg-rose-50 p-2 rounded-md">
-                        <span className="font-medium">Error:</span> {payment.failureReason}
+                        <span className="font-medium">Error:</span>{" "}
+                        {payment.failureReason}
                       </div>
                     )}
                   </motion.div>

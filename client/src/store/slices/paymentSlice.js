@@ -1,122 +1,50 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   collection,
-  addDoc,
   getDocs,
   query,
   where,
   doc,
-  updateDoc,
   getDoc,
 } from "firebase/firestore";
 import { db, auth as firebaseAuth } from "../../firebase/config";
-import {
-  loadRazorpayScript,
-  razorpayConfig,
-  formatAmountForRazorpay,
-} from "../../services/razerpayConfig";
-import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_URL = "http://localhost:5000/api";
+
+const getAuthToken = async () => {
+  const user = firebaseAuth.currentUser;
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+  return await user.getIdToken();
+};
 
 export const initiatePayment = createAsyncThunk(
   "payment/initiate",
-  async ({ bookingData, amount, tripType }, { getState, rejectWithValue }) => {
+  async ({ bookingData, amount, tripType }, { rejectWithValue }) => {
     try {
-      const state = getState();
-      const user = state.auth.user;
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      const token = await getAuthToken();
 
-      // Parse amount - remove ₹ symbol and convert to number
-      const numericAmount =
-        typeof amount === "string"
-          ? parseFloat(amount.replace(/[₹,]/g, ""))
-          : amount;
-
-      if (isNaN(numericAmount) || numericAmount <= 0) {
-        throw new Error("Invalid amount");
-      }
-
-      // Convert to paisa (Razorpay expects amount in smallest currency unit)
-      const amountInPaisa = Math.round(numericAmount * 100);
-
-      // Create booking document first
-      const bookingDoc = {
-        userId: user.uid,
-        userName: user.displayName || user.email,
-        userEmail: user.email,
-        carName: bookingData.carName,
-        carModel: bookingData.carModel,
-        capacity: bookingData.capacity,
-        luggage: bookingData.luggage,
-        mobileNumber: bookingData.mobileNumber,
-        from: bookingData.from,
-        to: bookingData.to,
-        route: bookingData.route,
-        tripType: bookingData.tripType,
-        selectedPickupDate: bookingData.selectedPickupDate,
-        selectedPickupTime: bookingData.selectedPickupTime,
-        selectedReturnDate: bookingData.selectedReturnDate || null,
-        pricePerKm: bookingData.pricePerKm || null,
-        minKm: bookingData.minKm || null,
-        pricingId: bookingData.pricingId || null,
-        amount: numericAmount,
-        status: "pending",
-        paymentStatus: "pending",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      const bookingRef = await addDoc(collection(db, "bookings"), bookingDoc);
-      const bookingId = bookingRef.id;
-      
-      // Create payment document
-      const paymentDoc = {
-        userId: user.uid,
-        userName: user.displayName || user.email,
-        userEmail: user.email,
-        bookingId: bookingId,
-        amount: amountInPaisa,
-        currency: "INR",
-        status: "created",
-        tripType: tripType,
-        bookingDetails: {
-          carName: bookingData.carName,
-          carModel: bookingData.carModel,
-          from: bookingData.from,
-          to: bookingData.to,
-          route: bookingData.route,
-          capacity: bookingData.capacity,
-          luggage: bookingData.luggage,
-          tripType: bookingData.tripType,
-          mobileNumber: bookingData.mobileNumber,
-          selectedPickupDate: bookingData.selectedPickupDate,
-          selectedPickupTime: bookingData.selectedPickupTime,
-          selectedReturnDate: bookingData.selectedReturnDate || null,
+      const response = await fetch(`${API_URL}/payments/create-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+        body: JSON.stringify({
+          bookingData,
+          amount,
+          tripType,
+        }),
+      });
 
-      const paymentRef = await addDoc(collection(db, "payments"), paymentDoc);
-      const paymentId = paymentRef.id;
+      const data = await response.json();
 
-      // FOR TESTING: Generate mock payment ID
-      const mockRazorpayPaymentId = `pay_test_${Date.now()}`;
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create payment order");
+      }
 
-      return {
-        paymentId,
-        bookingId,
-        amount: amountInPaisa,
-        currency: "INR",
-        bookingDetails: bookingData,
-        // Mock Razorpay response for testing
-        razorpayOrderId: `order_test_${Date.now()}`,
-        razorpayPaymentId: mockRazorpayPaymentId,
-        isMockPayment: true, // Flag to identify test payments
-      };
+      return data;
     } catch (error) {
       console.error("Payment initiation error:", error);
       return rejectWithValue(error.message);
@@ -128,125 +56,92 @@ export const processRazorpayPayment = createAsyncThunk(
   "payment/processRazorpay",
   async ({ paymentData, onSuccess }, { rejectWithValue }) => {
     try {
-      const { paymentId, bookingId, amount, isMockPayment } = paymentData;
+      const { orderId, amount, key, bookingId, paymentId } = paymentData;
 
-      // FOR TESTING: If it's a mock payment, simulate success immediately
-      if (isMockPayment) {
-        // Simulate a small delay for realistic feel
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (!window.Razorpay) {
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.async = true;
+        document.body.appendChild(script);
 
-        // Update payment document
-        const paymentRef = doc(db, "payments", paymentId);
-        await updateDoc(paymentRef, {
-          status: "success",
-          razorpayPaymentId: paymentData.razorpayPaymentId,
-          razorpayOrderId: paymentData.razorpayOrderId,
-          completedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+        await new Promise((resolve, reject) => {
+          script.onload = resolve;
+          script.onerror = () =>
+            reject(new Error("Failed to load Razorpay SDK"));
         });
-
-        // Update booking document
-        const bookingRef = doc(db, "bookings", bookingId);
-        await updateDoc(bookingRef, {
-          status: "confirmed",
-          paymentStatus: "completed",
-          paymentId: paymentId,
-          razorpayPaymentId: paymentData.razorpayPaymentId,
-          completedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-
-        if (onSuccess) {
-          onSuccess();
-        }
-
-        return {
-          success: true,
-          paymentId,
-          bookingId,
-          message: "Payment successful (Test Mode)",
-        };
       }
 
-      // PRODUCTION CODE: Will be used when you add real Razorpay integration
-      // Load Razorpay script
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.async = true;
-      document.body.appendChild(script);
+      return new Promise((resolve, reject) => {
+        const options = {
+          key: key,
+          amount: amount,
+          currency: "INR",
+          name: "First Cab",
+          description: "Cab Booking Payment",
+          order_id: orderId,
+          handler: async function (response) {
+            try {
+              const token = await getAuthToken();
 
-      await new Promise((resolve, reject) => {
-        script.onload = resolve;
-        script.onerror = () => reject(new Error("Failed to load Razorpay SDK"));
-      });
+              const verifyResponse = await fetch(`${API_URL}/payments/verify`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  paymentId: paymentId,
+                  bookingId: bookingId,
+                }),
+              });
 
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: amount,
-        currency: "INR",
-        name: "Your Company Name",
-        description: "Cab Booking Payment",
-        order_id: paymentData.razorpayOrderId,
-        handler: async function (response) {
-          try {
-            const paymentRef = doc(db, "payments", paymentId);
-            await updateDoc(paymentRef, {
-              status: "success",
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpaySignature: response.razorpay_signature,
-              completedAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            });
+              const verifyData = await verifyResponse.json();
 
-            const bookingRef = doc(db, "bookings", bookingId);
-            await updateDoc(bookingRef, {
-              status: "confirmed",
-              paymentStatus: "completed",
-              paymentId: paymentId,
-              razorpayPaymentId: response.razorpay_payment_id,
-              completedAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            });
+              if (!verifyResponse.ok) {
+                throw new Error(
+                  verifyData.message || "Payment verification failed"
+                );
+              }
 
-            if (onSuccess) {
-              onSuccess();
+              if (onSuccess) {
+                onSuccess();
+              }
+
+              resolve({
+                success: true,
+                paymentId,
+                bookingId,
+                message: "Payment successful",
+              });
+            } catch (error) {
+              console.error("Payment verification error:", error);
+              reject(error);
             }
-          } catch (error) {
-            console.error("Error updating payment:", error);
-            throw error;
-          }
-        },
-        modal: {
-          ondismiss: function () {
-            throw new Error("Payment cancelled by user");
           },
-        },
-        theme: {
-          color: "#f59e0b",
-        },
-      };
+          modal: {
+            ondismiss: function () {
+              reject(new Error("Payment cancelled by user"));
+            },
+          },
+          theme: {
+            color: "#f59e0b",
+          },
+          prefill: {
+            email: firebaseAuth.currentUser?.email || "",
+          },
+        };
 
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
-
-      return {
-        success: true,
-        paymentId,
-        bookingId,
-      };
+        const razorpay = new window.Razorpay(options);
+        razorpay.on("payment.failed", function (response) {
+          reject(new Error(response.error.description || "Payment failed"));
+        });
+        razorpay.open();
+      });
     } catch (error) {
       console.error("Razorpay payment error:", error);
-
-      if (paymentData.paymentId) {
-        const paymentRef = doc(db, "payments", paymentData.paymentId);
-        await updateDoc(paymentRef, {
-          status: "failed",
-          error: error.message,
-          updatedAt: new Date().toISOString(),
-        });
-      }
-
       return rejectWithValue(error.message);
     }
   }
@@ -275,17 +170,16 @@ export const fetchAllPayments = createAsyncThunk(
 
 export const fetchUserPayments = createAsyncThunk(
   "payment/fetchUserPayments",
-  async (_, { rejectWithValue, getState }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const { auth } = getState();
-
-      if (!auth.user) {
+      const user = firebaseAuth.currentUser;
+      if (!user) {
         throw new Error("User must be authenticated");
       }
 
       const q = query(
         collection(db, "payments"),
-        where("userId", "==", auth.user.uid)
+        where("userId", "==", user.uid)
       );
 
       const querySnapshot = await getDocs(q);
@@ -298,7 +192,11 @@ export const fetchUserPayments = createAsyncThunk(
         });
       });
 
-      payments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      payments.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+        const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+        return dateB - dateA;
+      });
 
       return payments;
     } catch (error) {
@@ -328,24 +226,30 @@ export const fetchPaymentById = createAsyncThunk(
   }
 );
 
-export const verifyPaymentStatus = createAsyncThunk(
-  "payment/verifyStatus",
-  async (paymentId, { rejectWithValue }) => {
+export const refundPayment = createAsyncThunk(
+  "payment/refund",
+  async (bookingId, { rejectWithValue }) => {
     try {
-      const docRef = doc(db, "payments", paymentId);
-      const docSnap = await getDoc(docRef);
+      const token = await getAuthToken();
 
-      if (docSnap.exists()) {
-        const paymentData = docSnap.data();
-        return {
-          id: docSnap.id,
-          status: paymentData.status,
-          ...paymentData,
-        };
-      } else {
-        throw new Error("Payment not found");
+      const response = await fetch(`${API_URL}/payments/refund`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ bookingId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to process refund");
       }
+
+      return data;
     } catch (error) {
+      console.error("Refund error:", error);
       return rejectWithValue(error.message);
     }
   }
@@ -387,11 +291,13 @@ const paymentSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Fetch all payments
       .addCase(fetchAllPayments.fulfilled, (state, action) => {
         state.loading = false;
         state.payments = action.payload;
       })
 
+      // Initiate payment
       .addCase(initiatePayment.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -407,6 +313,7 @@ const paymentSlice = createSlice({
         state.error = action.payload;
       })
 
+      // Process Razorpay payment
       .addCase(processRazorpayPayment.pending, (state) => {
         state.processingPayment = true;
         state.error = null;
@@ -426,6 +333,7 @@ const paymentSlice = createSlice({
         state.paymentSuccess = false;
       })
 
+      // Fetch user payments
       .addCase(fetchUserPayments.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -440,6 +348,7 @@ const paymentSlice = createSlice({
         state.error = action.payload;
       })
 
+      // Fetch payment by ID
       .addCase(fetchPaymentById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -453,17 +362,15 @@ const paymentSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-
-      .addCase(verifyPaymentStatus.pending, (state) => {
+      .addCase(refundPayment.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
-      .addCase(verifyPaymentStatus.fulfilled, (state, action) => {
+      .addCase(refundPayment.fulfilled, (state, action) => {
         state.loading = false;
-        if (state.currentPayment?.id === action.payload.id) {
-          state.currentPayment = action.payload;
-        }
+        state.error = null;
       })
-      .addCase(verifyPaymentStatus.rejected, (state, action) => {
+      .addCase(refundPayment.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

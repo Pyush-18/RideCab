@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Toaster } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 
 import {
@@ -51,6 +50,8 @@ const AdminDashboard = () => {
   const routes = useSelector((state) => state.routes?.routes ?? []);
   const pricing = useSelector((state) => state.pricing?.pricing ?? []);
   const bookings = useSelector((state) => state.booking?.bookings ?? []);
+
+  console.log("bookings", bookings);
   const payments = useSelector((state) => state.payment?.payments ?? []);
   const users = useSelector((state) => state.users?.users ?? []);
 
@@ -301,6 +302,7 @@ const AdminDashboard = () => {
     .filter((p) => p.status === "success")
     .map((p) => {
       const bookingDetails = p.bookingDetails || {};
+      console.log("booking details inside tx: ", bookingDetails)
       return {
         id: p.id,
         user: p.userName || "N/A",
@@ -320,8 +322,12 @@ const AdminDashboard = () => {
         completedAt: p.completedAt,
         from: bookingDetails.from || "N/A",
         to: bookingDetails.to || "N/A",
+        pickupSubLocation: bookingDetails.pickupSubLocation || null,
+        dropSubLocation: bookingDetails.dropSubLocation || null,
       };
     });
+
+    
 
   const enrichedUsers = users.map((user) => {
     const userBookings = bookings.filter((b) => b.userId === user.uid);
@@ -360,6 +366,8 @@ const AdminDashboard = () => {
         selectedPickupDate: booking.selectedPickupDate,
         selectedPickupTime: booking.selectedPickupTime,
         selectedReturnDate: booking.selectedReturnDate || null,
+        pickupSubLocation: booking.pickupSubLocation || null,
+        dropSubLocation: booking.dropSubLocation || null,
       };
     });
 
@@ -395,11 +403,6 @@ const AdminDashboard = () => {
 
   return (
     <>
-      <Toaster
-        position="top-right"
-        theme={darkMode ? "dark" : "light"}
-        richColors
-      />
       <div
         className={`min-h-screen ${themeClasses} transition-colors duration-300 relative`}
       >

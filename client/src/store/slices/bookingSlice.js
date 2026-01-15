@@ -10,6 +10,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../../firebase/config";
+import { refundPayment } from "./paymentSlice";
 
 export const createBooking = createAsyncThunk(
   "booking/create",
@@ -140,17 +141,10 @@ export const updateBookingStatus = createAsyncThunk(
 
 export const cancelBooking = createAsyncThunk(
   "booking/cancel",
-  async (bookingId, { rejectWithValue }) => {
+  async (bookingId, { rejectWithValue, dispatch }) => {
     try {
-      const docRef = doc(db, "bookings", bookingId);
-
-      await updateDoc(docRef, {
-        status: "cancelled",
-        cancelledAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-
-      return bookingId;
+      const refundResult = await dispatch(refundPayment(bookingId)).unwrap();
+      return { bookingId, refundResult };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -262,10 +256,20 @@ const bookingSlice = createSlice({
       })
       .addCase(cancelBooking.fulfilled, (state, action) => {
         state.loading = false;
-        const bookingId = action.payload;
+        const { bookingId } = action.payload;
+        const bookingIndex = state.bookings.findIndex(
+          (b) => b.id === bookingId
+        );
+        if (bookingIndex !== -1) {
+          state.bookings[bookingIndex].status = "cancelled";
+          state.bookings[bookingIndex].paymentStatus = "refunded";
+        }
+
         if (state.currentBooking?.id === bookingId) {
           state.currentBooking.status = "cancelled";
+          state.currentBooking.paymentStatus = "refunded";
         }
+
         state.error = null;
       })
       .addCase(cancelBooking.rejected, (state, action) => {
